@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerSnake — Neon Arena</title>
+    <meta name="description"
+        content="PowerSnake is a fast-paced neon snake arena game. Grow your powerline, boost off rivals, and become the king!">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Start Screen -->
+    <div id="startScreen" class="overlay">
+        <div class="overlay-content">
+            <h1 class="game-title">POWER<span class="accent">SNAKE</span></h1>
+            <p class="tagline">Dominate the neon arena</p>
+            <div class="input-group">
+                <input type="text" id="nicknameInput" maxlength="15" placeholder="Enter nickname..." autocomplete="off"
+                    spellcheck="false">
+            </div>
+            <button id="playButton" class="neon-button">PLAY</button>
+            <div class="controls-hint">
+                <p><span class="key">W A S D</span> or <span class="key">↑ ← ↓ →</span> to move</p>
+                <p>Ride close to others for a <span class="accent">SPEED BOOST</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Death Screen -->
+    <div id="deathScreen" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="death-title">ELIMINATED</h2>
+            <div class="death-stats">
+                <div class="stat">
+                    <span class="stat-label">SCORE</span>
+                    <span class="stat-value" id="finalScore">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">LENGTH</span>
+                    <span class="stat-value" id="finalLength">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">RANK</span>
+                    <span class="stat-value" id="finalRank">#1</span>
+                </div>
+            </div>
+            <button id="replayButton" class="neon-button">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+        <!-- Leaderboard -->
+        <div id="leaderboard">
+            <div class="lb-header">LEADERBOARD</div>
+            <div id="lbEntries"></div>
+        </div>
+
+        <!-- Player Score -->
+        <div id="playerScore">
+            <span id="scoreLabel">SCORE:</span>
+            <span id="scoreValue">0</span>
+        </div>
+
+        <!-- Minimap -->
+        <canvas id="minimap" width="180" height="180"></canvas>
+
+        <!-- Boost Indicator -->
+        <div id="boostIndicator" class="hidden">
+            ⚡ BOOST
+        </div>
+    </div>
+
+    <!-- Virtual Joystick -->
+    <div id="joystick-zone">
+        <div id="joystick-base"></div>
+        <div id="joystick-stick"></div>
+    </div>
+
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <script src="game.js"></script>
+</body>
+
+</html>
