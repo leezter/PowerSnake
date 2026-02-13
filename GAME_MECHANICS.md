@@ -106,3 +106,31 @@ Food items are attracted to snake heads when they come within range, creating a 
 | `FOOD_COUNT` | 300 | Amount of food pellets |
 | `BOT_COUNT` | 29 | Number of AI enemies |
 | `WIDTH_GROWTH_RATE` | 2000 | Score needed to reach max thickness |
+
+## 5. Sound System (`SoundManager`)
+
+The game features a procedural audio engine using the **Web Audio API** to generate all sound effects (SFX) in real-time without external assets. The system is designed to maximize player satisfaction ("dopamine") through variety and musicality.
+
+### 5.1 Dynamic SFX Varieties
+Each major game event has **11 distinct varieties** (0-10) that are randomly selected to prevent auditory repetition.
+
+*   **Collect (`playCollect`):** Plays notes from specific musical scales that ascend in pitch as the combo counter increases.
+    *   **Styles:** Classic, Crystal, Cyber, Bubble, Void, Rave, Acid (New), Deep (New), Future (New), Industrial (New), Glitch (New).
+    *   **Logic:** Resets combo if ~4s elapses between collects. High combos trigger special "reward" bass tones.
+
+*   **Boost (`playBoost`):** A continuous engine hum combined with one-shot ignition and loop effects.
+    *   **Variants:** Classic Nitro, Warp Drive, Thunder, Jet Engine, Cyber Dash, Sonic Boom, Plasma (New), Nebula (New), Overdrive (New), Slipstream (New), Quantum (New).
+    *   **Engine:** `updateBoostHum` dynamically changes oscillator waveforms (Sawtooth, Square, Sine) and LFO modulation based on the active style.
+
+*   **Kill (`playKill`):** High-impact sounds rewarding the player for eliminating an opponent.
+    *   **Variants:** Basscannon, Glass Shatter, Implosion, 8-Bit, Glitch Tear, Ethereal, Black Hole (New), Fatality (New), Disintegrate (New), Vaporize (New), Shutdown (New).
+
+*   **Die (`playDie`):** Thematic sounds for player death.
+    *   **Variants:** System Failure, Flatline, Power Down, Bitcrush, Ghost, Crunch, Rewind (New), Glitch Out (New), Abyss (New), System Crash (New), Game Over (New).
+
+*   **Start (`playStart`):** Introductory sounds when the game begins or restarts.
+    *   **Variants:** Cinematic Riser, Orchestral, Cyberpunk, Retro, Ethereal, Industrial, Drop (New), Ignition (New), Portal (New), Ready (New), Zen (New).
+
+### 5.2 Musical Logic
+*   **Scales:** The `SoundManager` defines 11 musical scales/modes (e.g., Major Pentatonic, Lydian, Dorian, Phrygian Dominant) used primarily by the Collect SFX to ensure all notes sound harmonious within their style.
+*   **Synthesis:** Sounds are synthesized using oscillator nodes (sine, square, sawtooth, triangle) and noise buffers, shaped with gain envelopes (ADSR) and filters.
