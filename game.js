@@ -1619,7 +1619,17 @@ class SoundManager {
             // 4: Void (Hirajoshi - Exotic/Dark)
             4: calcScale([1, 9 / 8, 6 / 5, 3 / 2, 8 / 5], 220.00), // A2/A3 base
             // 5: Rave (Phrygian Dominant - Aggressive)
-            5: calcScale([1, 16 / 15, 5 / 4, 4 / 3, 3 / 2, 8 / 5, 9 / 5], 220.00)
+            5: calcScale([1, 16 / 15, 5 / 4, 4 / 3, 3 / 2, 8 / 5, 9 / 5], 220.00),
+            // 6: Acid (Dorian - Groovy)
+            6: calcScale([1, 9 / 8, 6 / 5, 4 / 3, 3 / 2, 5 / 3, 9 / 5], 146.83), // D3
+            // 7: Deep (Minor 9th - Hypnotic)
+            7: calcScale([1, 9 / 8, 6 / 5, 4 / 3, 3 / 2, 8 / 5, 9 / 5], 196.00), // G3
+            // 8: Future (Lydian Dominant - Uplifting)
+            8: calcScale([1, 9 / 8, 5 / 4, 45 / 32, 3 / 2, 5 / 3, 9 / 5], 261.63),
+            // 9: Industrial (Locrian - Dissonant)
+            9: calcScale([1, 17 / 16, 6 / 5, 4 / 3, 64 / 45, 8 / 5, 9 / 5], 110.00), // A2
+            // 10: Glitch (Chromatic/Whole Tone - Chaos)
+            10: calcScale([1, 9 / 8, 5 / 4, 45 / 32, 3 / 2, 25 / 16], 261.63)
         };
 
         // Backward compatibility for existing code references if any (though we'll update playCollect)
@@ -1728,7 +1738,8 @@ class SoundManager {
             this.combo = 0;
             // NEW: Pick a new Combo Style for this run!
             // 0=Classic, 1=Crystal, 2=Cyber, 3=Bubble, 4=Void, 5=Rave
-            this.comboStyle = Math.floor(Math.random() * 6);
+            // 6=Acid, 7=Deep, 8=Future, 9=Industrial, 10=Glitch
+            this.comboStyle = Math.floor(Math.random() * 11);
         } else {
             // Cap combo at scale length - 1
             const currentScale = this.scales[this.comboStyle] || this.scales[0];
@@ -1856,7 +1867,6 @@ class SoundManager {
 
             // --- STYLE 5: RAVE (Techno, Phrygian, Supersaw) ---
         } else if (style === 5) {
-            // 4-on-the-floor feel? No, just aggressive leads.
             // Supersaw emulation (3 detuned saws)
             this.playTone({ freq: freq, type: 'sawtooth', duration: 0.15, vol: 0.12, detune: 0, pan: 0 });
             this.playTone({ freq: freq, type: 'sawtooth', duration: 0.15, vol: 0.12, detune: -15, pan: -0.2 });
@@ -1866,6 +1876,74 @@ class SoundManager {
             if (this.combo % 4 === 0) {
                 this.playNoise(0.05, 0.2); // Hi-hatish
             }
+
+            // --- STYLE 6: ACID HOUSE (Dorian, Resonant Sweeps) ---
+        } else if (style === 6) {
+            // Emulate TB-303 squelch
+            // Sawtooth with sharp envelope filter sweep
+            this.playTone({
+                freq: freq,
+                type: 'sawtooth',
+                duration: 0.2,
+                vol: 0.2,
+                slide: 400 * (0.5 + Math.random()), // Filter sweep emulation
+                attack: 0.01,
+                pan: panVar
+            });
+            // Sub square for body
+            this.playTone({ freq: freq * 0.5, type: 'square', duration: 0.1, vol: 0.15, pan: 0 });
+
+            // Accent notes
+            if (this.combo % 3 === 0) {
+                this.playTone({ freq: freq * 2, type: 'sawtooth', duration: 0.1, vol: 0.1, slide: -200, pan: -panVar });
+            }
+
+            // --- STYLE 7: DEEP TECH (Minor 9th, Plucks) ---
+        } else if (style === 7) {
+            // Short, punchy sine plucks with "delay"
+            this.playTone({ freq: freq, type: 'sine', duration: 0.1, vol: 0.4, attack: 0.005, decay: 0.05, pan: panVar });
+
+            // Delay lines
+            setTimeout(() => this.playTone({ freq: freq, type: 'sine', duration: 0.1, vol: 0.15, pan: -panVar * 0.5 }), 120);
+            setTimeout(() => this.playTone({ freq: freq, type: 'sine', duration: 0.1, vol: 0.08, pan: panVar * 0.5 }), 240);
+
+            // Techy click
+            this.playNoise(0.02, 0.1);
+
+            // --- STYLE 8: FUTURE BASS (Super Major 7th, Wubs) ---
+        } else if (style === 8) {
+            // Detuned saws with volume ducking (sidechain feel)
+            this.playTone({ freq: freq, type: 'sawtooth', duration: 0.25, vol: 0.15, detune: -8, attack: 0.05, pan: -0.2 });
+            this.playTone({ freq: freq, type: 'sawtooth', duration: 0.25, vol: 0.15, detune: 8, attack: 0.05, pan: 0.2 });
+
+            // Third and Seventh (Chord stack)
+            if (this.combo % 2 === 0) {
+                this.playTone({ freq: freq * 1.25, type: 'sawtooth', duration: 0.2, vol: 0.08, detune: 5, attack: 0.05, pan: 0 }); // Major 3rd
+            }
+
+            // --- STYLE 9: INDUSTRIAL (Locrian, Metallic) ---
+        } else if (style === 9) {
+            // Metallic ring modulation-ish
+            this.playTone({ freq: freq, type: 'square', duration: 0.15, vol: 0.2, detune: this.rnd(-100, 100), pan: panVar });
+            this.playTone({ freq: freq * 2.53, type: 'square', duration: 0.1, vol: 0.15, detune: 0, pan: -panVar }); // Non-integer harmonic
+
+            // Clank noise
+            this.playNoise(0.08, 0.15);
+
+            // Gritty osc
+            this.playTone({ freq: 80, type: 'sawtooth', duration: 0.1, vol: 0.2, pan: 0 });
+
+            // --- STYLE 10: GLITCH HOP (Chromatic, Random) ---
+        } else if (style === 10) {
+            // Random pitch quantization effect
+            const glitchFreq = freq * (1 + (Math.floor(Math.random() * 4) * 0.25));
+            this.playTone({ freq: glitchFreq, type: 'triangle', duration: 0.08, vol: 0.3, pan: panVar });
+
+            // Artifacts
+            setTimeout(() => this.playTone({ freq: glitchFreq * 2, type: 'square', duration: 0.02, vol: 0.1 }), 40);
+
+            // Bitcrush noise
+            this.playNoise(0.04, 0.2);
         }
 
         // Common Reward/Bass Logic for high combos (scaled by style)
@@ -1878,7 +1956,8 @@ class SoundManager {
         if (!this.ctx) return;
 
         // Pick a style for this boost session (syncs with hum)
-        this.currentBoostStyle = Math.floor(Math.random() * 6);
+        // 0-5 Original, 6-10 New
+        this.currentBoostStyle = Math.floor(Math.random() * 11);
         const variant = this.currentBoostStyle;
 
         const t = this.ctx.currentTime;
@@ -1935,12 +2014,50 @@ class SoundManager {
             this.playTone({ freq: 100, type: 'sine', duration: 0.1, vol: 0.8, slide: -50, attack: 0.001, pan: 0 });
             // High frequency snap
             this.playTone({ freq: 3000, type: 'triangle', duration: 0.05, vol: 0.1, pan: 0 });
+
+            // --- VARIANT 6: PLASMA (Electrical, Zipping) ---
+        } else if (variant === 6) {
+            // High pitched fizz
+            this.playTone({ freq: 800, type: 'sawtooth', duration: 0.3, vol: 0.15, slide: 1500, pan: panVar });
+            // Zap
+            this.playTone({ freq: 400, type: 'square', duration: 0.1, vol: 0.2, slide: 800, pan: -panVar });
+            // Electrical hum
+            this.playTone({ freq: 50, type: 'sawtooth', duration: 0.4, vol: 0.3, detune: 20 });
+
+            // --- VARIANT 7: NEBULA (Washy, Reverb-like) ---
+        } else if (variant === 7) {
+            // Soft attack wash
+            this.playTone({ freq: 200, type: 'sine', duration: 1.0, vol: 0.3, attack: 0.2, slide: 200, pan: panVar });
+            this.playTone({ freq: 300, type: 'sine', duration: 1.0, vol: 0.2, attack: 0.25, slide: 300, pan: -panVar });
+            this.playNoise(0.8, 0.05);
+
+            // --- VARIANT 8: OVERDRIVE (Distorted, Aggressive) ---
+        } else if (variant === 8) {
+            // Power chord feel
+            this.playTone({ freq: 110, type: 'sawtooth', duration: 0.4, vol: 0.3, detune: -5, pan: -0.2 });
+            this.playTone({ freq: 165, type: 'sawtooth', duration: 0.4, vol: 0.3, detune: 5, pan: 0.2 });
+            this.playNoise(0.3, 0.2);
+
+            // --- VARIANT 9: SLIPSTREAM (Wind, Flow) ---
+        } else if (variant === 9) {
+            // High pass filter sweep simulation via tone slide
+            this.playTone({ freq: 2000, type: 'triangle', duration: 0.6, vol: 0.1, slide: -1000, attack: 0.1 });
+            this.playNoise(0.6, 0.2); // Wind
+
+            // --- VARIANT 10: QUANTUM (Granular, Particles) ---
+        } else if (variant === 10) {
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    this.playTone({ freq: this.rnd(800, 2500), type: 'sine', duration: 0.05, vol: 0.2, pan: this.rnd(-1, 1) });
+                }, i * 30);
+            }
+            this.playTone({ freq: 100, type: 'sine', duration: 0.5, vol: 0.4, slide: 100 });
         }
     }
 
     playKill() {
         if (!this.ctx) return;
-        const variant = Math.floor(Math.random() * 6);
+        const variant = Math.floor(Math.random() * 11);
         const t = this.ctx.currentTime;
 
         // --- VARIANT 0: BASSCANNON (Classic Dubstep Drop) ---
@@ -2001,12 +2118,51 @@ class SoundManager {
             this.playTone({ freq: 659, type: 'sine', duration: 0.8, vol: 0.2, attack: 0.1, pan: 0 });
             // Low thud
             this.playTone({ freq: 60, type: 'sine', duration: 0.4, vol: 0.4, attack: 0.01, pan: 0 });
+
+            // --- VARIANT 6: BLACK HOLE (Deep sub suck + silence) ---
+        } else if (variant === 6) {
+            // Deep low slide down
+            this.playTone({ freq: 100, type: 'sine', duration: 0.8, vol: 0.8, slide: -90, attack: 0.01 });
+            // Silence/Vacuum noise
+            this.playNoise(0.5, 0.1);
+            // Final pop
+            setTimeout(() => this.playTone({ freq: 2000, type: 'sine', duration: 0.05, vol: 0.2 }), 800);
+
+            // --- VARIANT 7: FATALITY (Digital impact + Drone) ---
+        } else if (variant === 7) {
+            this.playTone({ freq: 50, type: 'square', duration: 0.3, vol: 0.8, slide: -20 });
+            this.playNoise(0.1, 0.5);
+            // Low menacing drone
+            this.playTone({ freq: 40, type: 'sawtooth', duration: 1.5, vol: 0.3, attack: 0.5 });
+
+            // --- VARIANT 8: DISINTEGRATE (Noise dissolving) ---
+        } else if (variant === 8) {
+            // Granular bits
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    this.playTone({ freq: this.rnd(500, 3000), type: 'square', duration: 0.02, vol: 0.15, pan: this.rnd(-0.8, 0.8) });
+                }, i * 30);
+            }
+            this.playNoise(0.5, 0.3);
+
+            // --- VARIANT 9: VAPORIZE (Quick hiss + high sine fade) ---
+        } else if (variant === 9) {
+            this.playNoise(0.1, 0.6); // Psst
+            this.playTone({ freq: 4000, type: 'sine', duration: 0.5, vol: 0.2, decay: 0.2 }); // Steam
+
+            // --- VARIANT 10: SHUTDOWN (Melodic fragment) ---
+        } else if (variant === 10) {
+            const notes = [880, 783, 659, 523];
+            notes.forEach((f, i) => {
+                setTimeout(() => this.playTone({ freq: f, type: 'sine', duration: 0.3, vol: 0.3, decay: 0.1 }), i * 150);
+            });
+            setTimeout(() => this.playTone({ freq: 100, type: 'square', duration: 0.5, vol: 0.4, slide: -80 }), 600);
         }
     }
 
     playDie() {
         if (!this.ctx) return;
-        const variant = Math.floor(Math.random() * 6);
+        const variant = Math.floor(Math.random() * 11);
         const t = this.ctx.currentTime;
 
         // --- VARIANT 0: SYSTEM FAILURE (Original) ---
@@ -2063,12 +2219,45 @@ class SoundManager {
             this.playNoise(0.5, 0.2);
             // Low impact
             this.playTone({ freq: 40, type: 'sine', duration: 0.4, vol: 0.6, attack: 0.001 });
+
+            // --- VARIANT 6: REWIND (Tape stop) ---
+        } else if (variant === 6) {
+            this.playTone({ freq: 1000, type: 'sawtooth', duration: 0.6, vol: 0.3, slide: -950 });
+            this.playNoise(0.4, 0.2); // Tape friction
+
+            // --- VARIANT 7: GLITCH OUT (Stutter) ---
+        } else if (variant === 7) {
+            const stutter = [440, 440, 220, 110, 55, 0];
+            stutter.forEach((f, i) => {
+                setTimeout(() => {
+                    if (f > 0) this.playTone({ freq: f, type: 'square', duration: 0.05, vol: 0.3 });
+                    else this.playNoise(0.1, 0.4);
+                }, i * 60);
+            });
+
+            // --- VARIANT 8: ABYSS (Deep Reverb Fall) ---
+        } else if (variant === 8) {
+            this.playTone({ freq: 80, type: 'sine', duration: 2.5, vol: 0.5, slide: -60, attack: 0.1 });
+            this.playNoise(1.5, 0.1);
+
+            // --- VARIANT 9: SYSTEM CRASH (BSOD) ---
+        } else if (variant === 9) {
+            this.playTone({ freq: 150, type: 'square', duration: 1.0, vol: 0.5 }); // Static buz
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => this.playNoise(0.05, 0.3), Math.random() * 800);
+            }
+
+            // --- VARIANT 10: GAME OVER (Arcade) ---
+        } else if (variant === 10) {
+            [800, 700, 600, 500, 400, 300, 200].forEach((f, i) => {
+                setTimeout(() => this.playTone({ freq: f, type: 'triangle', duration: 0.1, vol: 0.3 }), i * 100);
+            });
         }
     }
 
     playStart() {
         if (!this.ctx) return;
-        const variant = Math.floor(Math.random() * 6);
+        const variant = Math.floor(Math.random() * 11);
 
         // --- VARIANT 0: CINEMATIC RISER ---
         if (variant === 0) {
@@ -2131,6 +2320,38 @@ class SoundManager {
             this.playNoise(0.2, 0.4);
             // Steam hiss finish
             setTimeout(() => this.playNoise(1.0, 0.1), 300);
+
+            // --- VARIANT 6: DROP (Techno Cymbal) ---
+        } else if (variant === 6) {
+            const d = 1.0;
+            this.playNoise(d, 0.3); // Reverse cymbal approximation? fading in?
+            this.playTone({ freq: 50, type: 'sine', duration: d, vol: 0.4, slide: 50 }); // Low hum build
+            setTimeout(() => {
+                this.playTone({ freq: 60, type: 'square', duration: 0.2, vol: 0.6 }); // Kick
+                this.playTone({ freq: 150, type: 'sawtooth', duration: 0.6, vol: 0.2, slide: -100 }); // Bass pluck
+            }, d * 1000);
+
+            // --- VARIANT 7: IGNITION (Engine) ---
+        } else if (variant === 7) {
+            this.playTone({ freq: 40, type: 'sawtooth', duration: 1.5, vol: 0.4, slide: 200, attack: 0.1 });
+            setTimeout(() => this.playTone({ freq: 80, type: 'sawtooth', duration: 0.5, vol: 0.3, slide: 100 }), 1200);
+
+            // --- VARIANT 8: PORTAL (Warp) ---
+        } else if (variant === 8) {
+            this.playTone({ freq: 100, type: 'sine', duration: 2.0, vol: 0.3, slide: 1000, attack: 0.5 });
+            this.playTone({ freq: 2000, type: 'triangle', duration: 2.0, vol: 0.1, slide: -1800, attack: 0.5 });
+
+            // --- VARIANT 9: READY (Trance Pluck) ---
+        } else if (variant === 9) {
+            [0, 0.25, 0.5, 0.75].forEach((t, i) => {
+                setTimeout(() => this.playTone({ freq: 440, type: 'sawtooth', duration: 0.15, vol: 0.3, pan: (i % 2 ? 0.3 : -0.3) }), t * 1000);
+            });
+            setTimeout(() => this.playTone({ freq: 880, type: 'sawtooth', duration: 0.5, vol: 0.4 }), 1000);
+
+            // --- VARIANT 10: ZEN (Gong) ---
+        } else if (variant === 10) {
+            this.playTone({ freq: 180, type: 'sine', duration: 3.0, vol: 0.5, attack: 0.05, decay: 2.0, detune: 10 }); // Pseudo gong
+            this.playNoise(1.0, 0.1);
         }
     }
 
@@ -2150,21 +2371,30 @@ class SoundManager {
             if (this.boostNodes.humOsc1) {
                 // Default: Sawtooth
                 let type = 'sawtooth';
-                if (style === 1 || style === 5) type = 'sine'; // Warp, Sonic
-                if (style === 4) type = 'square'; // Cyber
+                if (style === 1 || style === 5 || style === 7 || style === 10) type = 'sine'; // Warp, Sonic, Nebula, Quantum
+                if (style === 4 || style === 6 || style === 9) type = 'square'; // Cyber, Plasma, Slipstream
+                if (style === 8) type = 'sawtooth'; // Overdrive
 
                 this.boostNodes.humOsc1.type = type;
                 this.boostNodes.humOsc2.type = type;
 
                 // LFO Type
-                this.boostNodes.crackleLFO.type = (style === 4) ? 'sawtooth' : 'square';
+                const sawLFO = [4, 6, 8];
+                const squareLFO = [0, 2, 9];
+                if (sawLFO.includes(style)) {
+                    this.boostNodes.crackleLFO.type = 'sawtooth';
+                } else if (squareLFO.includes(style)) {
+                    this.boostNodes.crackleLFO.type = 'square';
+                } else {
+                    this.boostNodes.crackleLFO.type = 'sine';
+                }
             }
             this.lastBoostStyle = style;
         }
 
         // Map intensity (0-1) to volume
         let baseVol = clamp(intensity, 0, 1) * 0.45;
-        if (style === 5) baseVol *= 0.6; // Sonic is cleaner/louder
+        if (style === 5 || style === 7) baseVol *= 0.6; // Sonic/Nebula is cleaner/louder
 
         this.boostMasterGain.gain.setTargetAtTime(baseVol, now, 0.1);
 
@@ -2208,9 +2438,6 @@ class SoundManager {
 
                 const airFreq = 500 + (intensity * 2000);
                 this.boostNodes.crackleFilter.frequency.setTargetAtTime(airFreq, now, 0.1);
-                this.boostNodes.crackleLFO.frequency.setTargetAtTime(0, now, 0.1); // Constant stream (LFO 0 stops?) No, 0 stops osc usually.
-                // Actually LFO connects to gain. If LFO stops, gain might freeze. 
-                // Let's set high frequency so it blurs into noise
                 this.boostNodes.crackleLFO.frequency.setTargetAtTime(100, now, 0.1);
 
                 // 4: CYBER DASH (Glitchy Square)
@@ -2232,6 +2459,45 @@ class SoundManager {
 
                 // Silence the noise
                 this.boostNodes.crackleFilter.frequency.setTargetAtTime(0, now, 0.1);
+
+                // 6: PLASMA (Electrical)
+            } else if (style === 6) {
+                const strain = 200 + (intensity * 600);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.05);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain * 1.1, now, 0.05); // heavy detune
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(1000 + intensity * 2000, now, 0.1);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(60, now, 0.2); // Buzz
+
+                // 7: NEBULA (Wash)
+            } else if (style === 7) {
+                const strain = 100 + (intensity * 100);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.5);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain * 1.5, now, 0.5); // 5th interval
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(600, now, 0.5);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(1, now, 1.0); // Slow breathing
+
+                // 8: OVERDRIVE (Distortion)
+            } else if (style === 8) {
+                const strain = 80 + (intensity * 80);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.1);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain * 1.01, now, 0.1);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(100, now, 0.1); // Sub grit
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(120, now, 0.1); // Motorboat
+
+                // 9: SLIPSTREAM (Wind)
+            } else if (style === 9) {
+                this.boostNodes.humOsc1.frequency.setValueAtTime(0, now);
+                const windFreq = 800 + (intensity * 1200);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(windFreq, now, 0.2);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(intensity * 10, now, 0.2);
+
+                // 10: QUANTUM (Particles)
+            } else if (style === 10) {
+                const strain = 400 + (Math.random() * 200);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.05);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain * 2, now, 0.05);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(2000, now, 0.1);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(Math.random() * 50, now, 0.1);
             }
         }
     }
