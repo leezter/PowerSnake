@@ -1097,6 +1097,8 @@ class Snake {
         this.boostTimer = 0;
         this.boostIntensity = 0; // 0-1, ramps up/down over BOOST_RAMP_DURATION
         this.boostConnection = null;
+        this.lastBoostSource = null;
+        this.currentBoostStyle = 0;
         this.headScale = 1.0;
 
         // Position & segments
@@ -1798,7 +1800,8 @@ function checkBoosts() {
         snake.boostConnection = null;
         const hx = snake.x;
         const hy = snake.y;
-        const snakeDir = snake.dir;
+
+        let currentBoostSource = null;
 
         for (const other of snakes) {
             if (other === snake || !other.alive) continue;
@@ -1810,6 +1813,7 @@ function checkBoosts() {
 
                 if (d < BOOST_PROXIMITY && d > snake.width + other.width) {
                     nearParallel = true;
+                    currentBoostSource = other;
                     snake.boostConnection = {
                         x: seg.x,
                         y: seg.y,
@@ -1822,11 +1826,37 @@ function checkBoosts() {
         }
 
         if (nearParallel) {
-            if (!snake.boosting && snake.isPlayer) {
-                soundManager.playBoost();
+            // SFX Logic
+            if (snake.isPlayer) {
+                const isNewSource = (currentBoostSource !== snake.lastBoostSource);
+                // "New Session" if we weren't boosting (timer expired) OR new source
+                const isNewSession = (!snake.boosting) || isNewSource;
+
+                if (isNewSession) {
+                    // Decide if we should change the style
+                    // Change if: New Source OR We fully slowed down
+                    let shouldChangeStyle = false;
+
+                    if (isNewSource) {
+                        shouldChangeStyle = true;
+                    } else if (snake.boostIntensity <= 0.05) {
+                        shouldChangeStyle = true;
+                    }
+
+                    if (shouldChangeStyle) {
+                        snake.currentBoostStyle = Math.floor(Math.random() * 11);
+                    }
+
+                    // Play the sound (either new style or same as before)
+                    soundManager.playBoost(snake.currentBoostStyle);
+
+                    snake.lastBoostSource = currentBoostSource;
+                }
             }
+
             snake.boosting = true;
-            snake.boostTimer = 0.3;
+            snake.boostTimer = 0.6;
+
             // Boost particles
             if (Math.random() < 0.3) {
                 particles.push(new Particle(
@@ -3036,12 +3066,16 @@ class SoundManager {
         }
     }
 
-    playBoost() {
+    playBoost(forceStyle = -1) {
         if (!this.ctx) return;
 
         // Pick a style for this boost session (syncs with hum)
         // 0-5 Original, 6-10 New
-        this.currentBoostStyle = Math.floor(Math.random() * 11);
+        if (forceStyle !== -1) {
+            this.currentBoostStyle = forceStyle;
+        } else {
+            this.currentBoostStyle = Math.floor(Math.random() * 11);
+        }
         const variant = this.currentBoostStyle;
 
         const t = this.ctx.currentTime;
