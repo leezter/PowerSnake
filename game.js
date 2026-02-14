@@ -12,7 +12,7 @@ const BOOST_RAMP_DURATION = 6.0; // seconds to reach full boost speed
 const MAGNET_DISTANCE = 75;
 const MAGNET_FORCE = 600; // pixels per second
 const FOOD_COUNT = 300;
-const BOT_COUNT = 29;
+const BOT_COUNT = 24; // Total 25 snakes (1 Player + 24 Bots)
 const SEGMENT_SPACING = 6;
 const MIN_SNAKE_WIDTH = 4;
 const MAX_SNAKE_WIDTH = 14;
@@ -20,21 +20,976 @@ const WIDTH_GROWTH_RATE = 2000; // score needed for max width
 const CAMERA_LERP = 0.08;
 const MINIMAP_SIZE = 180;
 
-const NEON_COLORS = [
-    '#00f0ff', '#ff00e5', '#00ff88', '#ffe600', '#ff6a00',
-    '#a855f7', '#ff3355', '#00ffcc', '#ff9500', '#66ff33',
-    '#ff66cc', '#33ccff', '#ffcc00', '#ff4488', '#00ddaa',
-    '#cc77ff', '#ff8833', '#55ff99', '#ff5577', '#88ddff',
+// ---- Snake Styles (Visuals & Personality) ----
+const SNAKE_STYLES = [
+    {
+        id: 'neon_cyber',
+        name: 'CYBER',
+        colors: { primary: '#00f0ff', secondary: '#ff00e5', glow: '#00f0ff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 20 + snake.boostIntensity * 20;
+            ctx.shadowColor = snake.style.colors.glow;
+            ctx.strokeStyle = snake.style.colors.primary;
+            ctx.lineWidth = snake.width;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            if (snake.segments.length > 0) {
+                ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+                for (let i = 1; i < snake.segments.length; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = snake.width * 0.3;
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = snake.style.colors.glow;
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.fillRect(size * 0.2, -size * 0.3, size * 0.5, size * 0.6);
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'inferno',
+        name: 'INFERNO',
+        colors: { primary: '#ff3300', secondary: '#ffaa00', glow: '#ff3300' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#ff5500';
+            ctx.strokeStyle = '#ff3300';
+            ctx.lineWidth = snake.width;
+            ctx.lineCap = 'butt';
+            ctx.beginPath();
+            if (snake.segments.length > 0) {
+                ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+                for (let i = 1; i < snake.segments.length; i++) {
+                    const s = snake.segments[i];
+                    const jitter = (Math.sin(i * 0.5 + performance.now() / 100) * 3);
+                    ctx.lineTo(s.x + jitter, s.y + jitter);
+                }
+            }
+            ctx.stroke();
+            ctx.strokeStyle = '#ffff00';
+            ctx.lineWidth = snake.width * 0.4;
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ffaa00';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 40;
+            ctx.beginPath();
+            ctx.moveTo(size * 1.2, 0);
+            ctx.lineTo(-size * 0.8, size);
+            ctx.lineTo(-size * 0.5, 0);
+            ctx.lineTo(-size * 0.8, -size);
+            ctx.fill();
+        },
+        update: (dt, snake) => {
+            if (Math.random() < 0.2) particles.push(new Particle(snake.x, snake.y, '#ffaa00', 'collect'));
+        }
+    },
+    {
+        id: 'void',
+        name: 'VOID',
+        colors: { primary: '#a855f7', secondary: '#1a0b2e', glow: '#a855f7' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#a855f7';
+            ctx.strokeStyle = 'rgba(20, 0, 40, 0.9)';
+            ctx.lineWidth = snake.width * 1.4;
+            ctx.beginPath();
+            if (snake.segments.length > 0) {
+                ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+                for (let i = 1; i < snake.segments.length; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            }
+            ctx.stroke();
+            ctx.strokeStyle = '#a855f7';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#000';
+            ctx.strokeStyle = '#a855f7';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = '#a855f7';
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'glitch',
+        name: 'GLITCH',
+        colors: { primary: '#00ff00', secondary: '#ffffff', glow: '#00ff00' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00ff00';
+            for (let i = 0; i < snake.segments.length; i += 2) {
+                const s = snake.segments[i];
+                const offset = (Math.random() - 0.5) * 6;
+                ctx.fillStyle = Math.random() > 0.95 ? '#fff' : '#00ff00';
+                ctx.fillRect(s.x - snake.width / 2 + offset, s.y - snake.width / 2, snake.width, snake.width);
+            };
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#00ff00';
+            ctx.shadowColor = '#00ff00';
+            ctx.shadowBlur = 20;
+            const shiftX = (Math.random() - 0.5) * 6;
+            ctx.fillRect(-size + shiftX, -size, size * 2, size * 2);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(size * 0.2, -size * 0.4, size * 0.4, size * 0.2);
+            ctx.fillRect(size * 0.2, size * 0.2, size * 0.4, size * 0.2);
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'plasma',
+        name: 'PLASMA',
+        colors: { primary: '#ff00e5', secondary: '#00f0ff', glow: '#ff00e5' },
+        renderBody: (ctx, snake) => {
+            const time = performance.now() / 150;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#ff00e5';
+            ctx.beginPath();
+            if (snake.segments.length > 0) {
+                ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+                for (let i = 1; i < snake.segments.length; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            }
+            ctx.strokeStyle = '#ff00e5';
+            ctx.lineWidth = snake.width + Math.sin(time) * 4;
+            ctx.stroke();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = snake.width * 0.3;
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ff00e5';
+            ctx.shadowBlur = 35;
+            ctx.shadowColor = '#ff00e5';
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 1.1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'midas',
+        name: 'MIDAS',
+        colors: { primary: '#ffd700', secondary: '#ffffff', glow: '#ffa500' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ffa500';
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = snake.width;
+            ctx.lineCap = 'square';
+            ctx.beginPath();
+            if (snake.segments.length > 0) {
+                ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+                for (let i = 1; i < snake.segments.length; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            }
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = snake.width * 0.4;
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ffd700';
+            ctx.shadowColor = '#ffa500';
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.moveTo(size * 1.3, 0);
+            ctx.lineTo(0, size);
+            ctx.lineTo(-size * 0.8, 0);
+            ctx.lineTo(0, -size);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'toxic',
+        name: 'TOXIN',
+        colors: { primary: '#ccff00', secondary: '#00ff00', glow: '#ccff00' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ccff00';
+            ctx.strokeStyle = '#ccff00';
+            ctx.lineWidth = snake.width;
+            ctx.lineCap = 'round';
+            ctx.setLineDash([snake.width * 1.5, snake.width * 0.5]);
+            ctx.beginPath();
+            if (snake.segments.length > 0) {
+                ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+                for (let i = 1; i < snake.segments.length; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ccff00';
+            ctx.shadowColor = '#ccff00';
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(0,50,0,0.5)';
+            ctx.beginPath();
+            ctx.arc(size * 0.3, -size * 0.3, size * 0.2, 0, Math.PI * 2);
+            ctx.arc(-size * 0.2, size * 0.2, size * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'prism',
+        name: 'PRISM',
+        colors: { primary: '#ffffff', secondary: '#00ffff', glow: '#ffffff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ffffff';
+            for (let i = 0; i < snake.segments.length; i += 2) {
+                const s = snake.segments[i];
+                const hue = (i * 15 + performance.now() / 5) % 360;
+                ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
+                ctx.beginPath();
+                const w = snake.width;
+                ctx.moveTo(s.x, s.y - w);
+                ctx.lineTo(s.x + w, s.y);
+                ctx.lineTo(s.x, s.y + w);
+                ctx.lineTo(s.x - w, s.y);
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 30;
+            ctx.beginPath();
+            ctx.moveTo(size, 0);
+            ctx.lineTo(-size * 0.5, size * 0.8);
+            ctx.lineTo(-size * 0.5, -size * 0.8);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'stealth',
+        name: 'GHOST',
+        colors: { primary: '#666666', secondary: '#333333', glow: '#ffffff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(255,255,255,0.3)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = snake.width;
+            ctx.beginPath();
+            if (snake.segments.length > 0) {
+                ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+                for (let i = 1; i < snake.segments.length; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            }
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            for (let i = 0; i < snake.segments.length; i += 4) {
+                const s = snake.segments[i];
+                const r = snake.width * (1 + Math.sin(i + performance.now() / 200) * 0.5);
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-size, 0);
+            ctx.lineTo(size, 0);
+            ctx.stroke();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'circuit',
+        name: 'CIRCUIT',
+        colors: { primary: '#00ccff', secondary: '#000033', glow: '#00ccff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00ccff';
+            ctx.strokeStyle = '#00ccff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            if (snake.segments.length > 0) {
+                ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+                for (let i = 1; i < snake.segments.length; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            }
+            ctx.stroke();
+            ctx.fillStyle = '#003366';
+            ctx.shadowBlur = 0;
+            for (let i = 0; i < snake.segments.length; i += 3) {
+                const s = snake.segments[i];
+                ctx.fillRect(s.x - snake.width / 2, s.y - snake.width / 2, snake.width, snake.width);
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#00ccff';
+            ctx.shadowColor = '#00ccff';
+            ctx.shadowBlur = 20;
+            ctx.fillRect(-size, -size, size * 2, size * 2);
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    // New Styles (11-25)
+    {
+        id: 'radium',
+        name: 'RADIUM',
+        colors: { primary: '#ccff00', secondary: '#000000', glow: '#66ff00' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#66ff00';
+            ctx.strokeStyle = '#33ff00';
+            ctx.lineWidth = snake.width;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            const len = snake.segments.length;
+            for (let i = 0; i < len; i++) {
+                const s = snake.segments[i];
+                if (i === 0) ctx.moveTo(s.x, s.y);
+                else ctx.lineTo(s.x, s.y);
+            }
+            ctx.stroke();
+            // Radiate rings
+            const time = performance.now() / 200;
+            for (let i = 0; i < len; i += 5) {
+                const s = snake.segments[i];
+                const r = snake.width * (1 + Math.sin(time + i) * 0.5);
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(200, 255, 0, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ccff00';
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#66ff00';
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            // Radioactive symbol
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+            for (let i = 0; i < 3; i++) {
+                ctx.save();
+                ctx.rotate(i * (Math.PI * 2 / 3));
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, size * 0.8, -0.5, 0.5);
+                ctx.fill();
+                ctx.restore();
+            }
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'cosmos',
+        name: 'COSMOS',
+        colors: { primary: '#001133', secondary: '#ffffff', glow: '#0044ff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#0044ff';
+            ctx.lineWidth = snake.width * 1.5;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000022';
+            ctx.beginPath();
+            const len = snake.segments.length;
+            for (let i = 0; i < len; i++) {
+                const s = snake.segments[i];
+                if (i === 0) ctx.moveTo(s.x, s.y);
+                else ctx.lineTo(s.x, s.y);
+            }
+            ctx.stroke();
+            // Stars
+            ctx.fillStyle = '#fff';
+            const time = performance.now() / 1000;
+            for (let i = 0; i < len; i += 2) {
+                if ((i * 1337) % 5 === 0) { // Random-ish seed
+                    const s = snake.segments[i];
+                    const flicker = Math.sin(time * 10 + i);
+                    const alpha = flicker > 0 ? 1 : 0.2;
+                    ctx.globalAlpha = alpha;
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#000022';
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#0044ff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            // Galaxy spiral
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            const spirals = 3;
+            for (let i = 0; i < spirals; i++) {
+                const offset = (Math.PI * 2 / spirals) * i;
+                for (let r = 0; r < size; r += 2) {
+                    const a = r * 0.5 + offset - performance.now() / 500;
+                    const px = Math.cos(a) * r;
+                    const py = Math.sin(a) * r;
+                    if (r === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+            }
+            ctx.stroke();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'vampire',
+        name: 'VAMPIRE',
+        colors: { primary: '#880000', secondary: '#000000', glow: '#ff0000' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ff0000';
+            ctx.fillStyle = '#550000';
+            const w = snake.width;
+            // Bat wings / cape effect
+            const len = snake.segments.length;
+            for (let i = 0; i < len - 1; i++) {
+                const s = snake.segments[i];
+                const next = snake.segments[i + 1];
+                const dx = next.x - s.x;
+                const dy = next.y - s.y;
+                const angle = Math.atan2(dy, dx);
+                const perpX = Math.cos(angle + Math.PI / 2);
+                const perpY = Math.sin(angle + Math.PI / 2);
+
+                const spread = w * (1 + Math.abs(Math.sin(i * 0.5)) / 2);
+                ctx.beginPath();
+                ctx.moveTo(s.x + perpX * spread, s.y + perpY * spread);
+                ctx.lineTo(s.x - perpX * spread, s.y - perpY * spread);
+                ctx.lineTo(next.x - perpX * spread, next.y - perpY * spread);
+                ctx.lineTo(next.x + perpX * spread, next.y + perpY * spread);
+                ctx.fill();
+            }
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 1;
+            ctx.stroke(); // Red outline
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#000';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#ff0000';
+            ctx.beginPath();
+            ctx.moveTo(size, 0);
+            ctx.lineTo(-size, size);
+            ctx.lineTo(-size * 0.5, 0);
+            ctx.lineTo(-size, -size);
+            ctx.fill();
+            // Red eyes
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(size * 0.2, -size * 0.4, size * 0.2, 0, Math.PI * 2);
+            ctx.arc(size * 0.2, size * 0.4, size * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => {
+            // Drops of blood / dark embers
+            if (Math.random() < 0.15) particles.push(new Particle(snake.x, snake.y, '#880000', 'ember'));
+        }
+    },
+    {
+        id: 'pixel',
+        name: 'PIXEL',
+        colors: { primary: '#00ff00', secondary: '#000000', glow: '#00ff00' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 0; // No blur for crisp pixels
+            ctx.fillStyle = '#00ff00';
+            const w = snake.width;
+            const blockSize = w * 1.2;
+            for (let i = 0; i < snake.segments.length; i += 2) {
+                const s = snake.segments[i];
+                ctx.fillRect(Math.floor(s.x - blockSize / 2), Math.floor(s.y - blockSize / 2), blockSize, blockSize);
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#00ff00';
+            const s = size * 1.5;
+            ctx.fillRect(-s / 2, -s / 2, s, s);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, -s * 0.2, s * 0.2, s * 0.2); // Eye
+        },
+        update: (dt, snake) => {
+            // Glitchy pixels
+            if (Math.random() < 0.15) particles.push(new Particle(snake.x, snake.y, '#00ff00', 'pixel'));
+        }
+    },
+    {
+        id: 'candy',
+        name: 'CANDY',
+        colors: { primary: '#ff66aa', secondary: '#00ccff', glow: '#ffffff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#fff';
+            ctx.lineCap = 'round';
+            ctx.lineWidth = snake.width;
+
+            // Striped pattern
+            for (let i = 0; i < snake.segments.length - 1; i++) {
+                const s = snake.segments[i];
+                const next = snake.segments[i + 1];
+                ctx.strokeStyle = (i % 4 < 2) ? '#ff66aa' : '#00ccff';
+                ctx.beginPath();
+                ctx.moveTo(s.x, s.y);
+                ctx.lineTo(next.x, next.y);
+                ctx.stroke();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ff66aa';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            // Swirl
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'magma',
+        name: 'MAGMA',
+        colors: { primary: '#ff4400', secondary: '#331100', glow: '#ff2200' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ff2200';
+            ctx.lineWidth = snake.width * 1.2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#441100'; // Dark crust
+            ctx.beginPath();
+            if (snake.segments.length > 0) {
+                ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+                for (let i = 1; i < snake.segments.length; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            }
+            ctx.stroke();
+
+            // Lava Cracks
+            ctx.strokeStyle = '#ff5500';
+            ctx.lineWidth = snake.width * 0.4;
+            ctx.setLineDash([10, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#441100';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#ff4400';
+            ctx.beginPath();
+            ctx.moveTo(size, 0);
+            ctx.lineTo(-size * 0.5, size);
+            ctx.lineTo(-size * 0.5, -size);
+            ctx.fill();
+            // Glowing core
+            ctx.fillStyle = '#ffaa00';
+            ctx.beginPath();
+            ctx.moveTo(size * 0.5, 0);
+            ctx.lineTo(-size * 0.2, size * 0.4);
+            ctx.lineTo(-size * 0.2, -size * 0.4);
+            ctx.fill();
+        },
+        update: (dt, snake) => {
+            if (Math.random() < 0.1) particles.push(new Particle(snake.x, snake.y, '#ff4400', 'ember'));
+        }
+    },
+    {
+        id: 'frost',
+        name: 'FROST',
+        colors: { primary: '#00ffff', secondary: '#ffffff', glow: '#0088ff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00ffff';
+            ctx.fillStyle = 'rgba(200, 255, 255, 0.4)';
+
+            // Spiky shards
+            const len = snake.segments.length;
+            for (let i = 0; i < len; i++) {
+                const s = snake.segments[i];
+                const w = snake.width;
+                ctx.beginPath();
+                ctx.moveTo(s.x + w, s.y);
+                ctx.lineTo(s.x, s.y + w);
+                ctx.lineTo(s.x - w, s.y);
+                ctx.lineTo(s.x, s.y - w);
+                ctx.fill();
+            }
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+            for (let i = 1; i < len; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#00ffff';
+            ctx.beginPath();
+            ctx.moveTo(size * 1.5, 0);
+            ctx.lineTo(0, size * 0.8);
+            ctx.lineTo(0, -size * 0.8);
+            ctx.fill();
+        },
+        update: (dt, snake) => {
+            // Ice sparkles
+            if (Math.random() < 0.1) particles.push(new Particle(snake.x, snake.y, '#ffffff', 'sparkle'));
+        }
+    },
+    {
+        id: 'voltaic',
+        name: 'VOLTAIC',
+        colors: { primary: '#ffff00', secondary: '#ffffff', glow: '#ffffaa' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ffff00';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'bevel';
+            ctx.beginPath();
+            const len = snake.segments.length;
+            if (len > 0) ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+            for (let i = 1; i < len; i++) {
+                const s = snake.segments[i];
+                const offset = (Math.random() - 0.5) * snake.width * 2;
+                ctx.lineTo(s.x + offset, s.y + offset);
+            }
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ffff00';
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(size, 0);
+            ctx.lineTo(-size, size * 0.5);
+            ctx.lineTo(-size * 0.5, 0);
+            ctx.lineTo(-size, -size * 0.5);
+            ctx.fill();
+        },
+        update: (dt, snake) => {
+            // Electric sparks
+            if (Math.random() < 0.2) particles.push(new Particle(snake.x, snake.y, '#ffff00', 'sparkle'));
+        }
+    },
+    {
+        id: 'azure',
+        name: 'AZURE',
+        colors: { primary: '#0066ff', secondary: '#00aaff', glow: '#0022ff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00aaff';
+            ctx.fillStyle = '#0066ff';
+            // Flowing river
+            const time = performance.now() / 200;
+            const len = snake.segments.length;
+            for (let i = 0; i < len - 1; i++) {
+                const s = snake.segments[i];
+                const w = snake.width * (0.8 + Math.sin(i * 0.3 - time) * 0.4);
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, w, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#00aaff';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#0066ff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.beginPath();
+            ctx.arc(-size * 0.3, -size * 0.3, size * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'verdant',
+        name: 'VERDANT',
+        colors: { primary: '#22aa22', secondary: '#55ff55', glow: '#00ff00' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#22aa22';
+            ctx.strokeStyle = '#006600';
+            ctx.lineWidth = snake.width;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            const len = snake.segments.length;
+            for (let i = 0; i < len; i++) {
+                if (i === 0) ctx.moveTo(snake.segments[i].x, snake.segments[i].y);
+                else ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            }
+            ctx.stroke();
+
+            // Leaves
+            ctx.fillStyle = '#55ff55';
+            for (let i = 0; i < len; i += 4) {
+                const s = snake.segments[i];
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, snake.width * 0.8, 0, Math.PI * 2); // Simplified leaf
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#22aa22';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#22aa22';
+            ctx.beginPath();
+            ctx.moveTo(size * 1.2, 0);
+            ctx.arc(0, 0, size, 0.5, -0.5, true);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'chrome',
+        name: 'CHROME',
+        colors: { primary: '#cccccc', secondary: '#ffffff', glow: '#888888' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ffffff';
+
+            // Gradient metallic look
+            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height); // Fixed gradient relative to screen for shine
+            grad.addColorStop(0, '#555');
+            grad.addColorStop(0.5, '#fff');
+            grad.addColorStop(1, '#555');
+
+            ctx.strokeStyle = '#aaaaaa';
+            ctx.lineWidth = snake.width + 2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            for (let i = 0; i < snake.segments.length; i++) {
+                if (i === 0) ctx.moveTo(snake.segments[i].x, snake.segments[i].y);
+                else ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            }
+            ctx.stroke();
+
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = snake.width * 0.4;
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#e0e0e0';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'sketch',
+        name: 'SKETCH',
+        colors: { primary: '#ffffff', secondary: '#000000', glow: '#ffffff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = '#fff';
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+
+            // Scribble
+            ctx.beginPath();
+            const len = snake.segments.length;
+            for (let i = 0; i < len; i++) {
+                const s = snake.segments[i];
+                const jx = (Math.random() - 0.5) * 4;
+                const jy = (Math.random() - 0.5) * 4;
+                if (i === 0) ctx.moveTo(s.x + jx, s.y + jy);
+                else ctx.lineTo(s.x + jx, s.y + jy);
+            }
+            ctx.stroke();
+            // Second pass
+            ctx.beginPath();
+            for (let i = 0; i < len; i++) {
+                const s = snake.segments[i];
+                const jx = (Math.random() - 0.5) * 4;
+                const jy = (Math.random() - 0.5) * 4;
+                if (i === 0) ctx.moveTo(s.x + jx, s.y + jy);
+                else ctx.lineTo(s.x + jx, s.y + jy);
+            }
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.stroke();
+            // X eyes
+            ctx.beginPath();
+            ctx.moveTo(size * 0.2, -size * 0.5); ctx.lineTo(size * 0.6, -size * 0.1);
+            ctx.moveTo(size * 0.6, -size * 0.5); ctx.lineTo(size * 0.2, -size * 0.1);
+            ctx.stroke();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'spectrum',
+        name: 'SPECTRUM',
+        colors: { primary: '#ff0000', secondary: '#00ff00', glow: '#ffffff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            const time = performance.now() / 10;
+            const len = snake.segments.length;
+
+            for (let i = 0; i < len; i += 3) {
+                const hue = (time + i * 5) % 360;
+                ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+                ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+                const s = snake.segments[i];
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, snake.width, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            const hue = (performance.now() / 10) % 360;
+            ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'matrix',
+        name: 'MATRIX',
+        colors: { primary: '#00ff33', secondary: '#003300', glow: '#00ff33' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00ff33';
+            ctx.fillStyle = '#00ff33';
+            ctx.font = `${Math.floor(snake.width * 1.5)}px monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const chars = "01";
+            for (let i = 0; i < snake.segments.length; i += 3) {
+                const s = snake.segments[i];
+                const char = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(char, s.x, s.y);
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.strokeStyle = '#00ff33';
+            ctx.shadowBlur = 20;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-size * 0.8, -size * 0.8, size * 1.6, size * 1.6);
+            ctx.fillStyle = '#00ff33';
+            ctx.fillRect(-size * 0.4, -size * 0.4, size * 0.8, size * 0.8);
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'samurai',
+        name: 'SAMURAI',
+        colors: { primary: '#aa0000', secondary: '#ddaa00', glow: '#aa0000' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#aa0000';
+
+            // Armor plates
+            const len = snake.segments.length;
+            for (let i = 0; i < len; i += 2) {
+                const s = snake.segments[i];
+                // Calculate angle
+                let angle = 0;
+                if (i + 1 < len) {
+                    angle = Math.atan2(snake.segments[i].y - snake.segments[i + 1].y, snake.segments[i].x - snake.segments[i + 1].x);
+                }
+
+                ctx.save();
+                ctx.translate(s.x, s.y);
+                ctx.rotate(angle);
+
+                ctx.fillStyle = '#aa0000';
+                ctx.fillRect(-snake.width, -snake.width, snake.width * 2, snake.width * 2);
+                ctx.strokeStyle = '#ddaa00'; // Gold trim
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-snake.width, -snake.width, snake.width * 2, snake.width * 2);
+
+                ctx.restore();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#aa0000';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            // Gold crest
+            ctx.fillStyle = '#ddaa00';
+            ctx.beginPath();
+            ctx.moveTo(size * 0.8, -size * 0.8);
+            ctx.lineTo(0, -size * 0.2);
+            ctx.lineTo(-size * 0.8, -size * 0.8);
+            ctx.lineTo(0, size * 0.5);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    }
 ];
 
-const BOT_NAMES = [
-    'Voltage', 'Neon', 'Sparky', 'Circuit', 'Plasma',
-    'Dynamo', 'Surge', 'Flux', 'Relay', 'Ohm',
-    'Tesla', 'Watt', 'Edison', 'Ampere', 'Joule',
-    'Photon', 'Neutron', 'Quark', 'Fusion', 'Ion',
-    'Bolt', 'Zapper', 'Static', 'Thunder', 'Nova',
-    'Pulse', 'Hertz', 'Farad', 'Gauss', 'Diode',
-];
+const NEON_COLORS = SNAKE_STYLES.map(s => s.colors.primary);
+const BOT_NAMES = SNAKE_STYLES.map(s => s.name);
 
 // Directions: 0=right, 1=down, 2=left, 3=up
 const DIR_VECTORS = [
@@ -112,9 +1067,10 @@ function lerp(a, b, t) {
 
 // ---- Snake Class ----
 class Snake {
-    constructor(name, color, isPlayer = false) {
+    constructor(name, style, isPlayer = false) {
         this.name = name;
-        this.color = color;
+        this.style = style;
+        this.color = style.colors.primary; // Keep for compatibility with food spawning
         this.isPlayer = isPlayer;
         this.alive = true;
         this.score = 0;
@@ -255,6 +1211,11 @@ class Snake {
         // AI
         if (!this.isPlayer) {
             this.updateAI(dt);
+        }
+
+        // Custom Visual Update
+        if (this.style && this.style.update) {
+            this.style.update(dt, this);
         }
     }
 
@@ -524,7 +1485,7 @@ class Particle {
             this.size = rand(3, 8);
             this.shape = 'rect'; // Digital debris
             this.drag = 0.94;
-        } else if (type === 'boost') {
+        } else if (type === 'boost' || type === 'ember') {
             this.vx = rand(-2, 2);
             this.vy = rand(-2, 2);
             this.maxLife = rand(0.3, 0.6);
@@ -532,7 +1493,7 @@ class Particle {
             this.size = rand(2, 4);
             this.shape = 'circle';
             this.drag = 0.92;
-        } else if (type === 'collect') {
+        } else if (type === 'collect' || type === 'sparkle') {
             const speed = rand(3, 7);
             const dir = rand(0, Math.PI * 2);
             this.vx = Math.cos(dir) * speed;
@@ -541,6 +1502,14 @@ class Particle {
             this.life = this.maxLife;
             this.size = rand(3, 6);
             this.shape = 'star'; // Sparkles
+            this.drag = 0.9;
+        } else if (type === 'pixel') {
+            this.vx = rand(-1, 1);
+            this.vy = rand(-1, 1);
+            this.maxLife = rand(0.3, 0.6);
+            this.life = this.maxLife;
+            this.size = rand(2, 5);
+            this.shape = 'rect';
             this.drag = 0.9;
         } else if (type === 'shockwave') {
             this.vx = 0;
@@ -1049,77 +2018,25 @@ function drawSnakes() {
 function drawSnake(snake) {
     if (snake.segments.length < 2) return;
 
+    // Use style renderer
+    if (snake.style && snake.style.renderBody) {
+        snake.style.renderBody(ctx, snake);
+    }
+
+    // Head
     const w = snake.width;
-    const time = performance.now() / 1000;
-
-    // --- 1. Outer Glow (The Neon Halo) ---
-    ctx.shadowColor = snake.color;
-    ctx.shadowBlur = 20 + snake.boostIntensity * 25; // Massive glow when boosting
-    ctx.strokeStyle = snake.color;
-    ctx.lineWidth = w * 1.2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.globalAlpha = 0.4;
-
-    ctx.beginPath();
-    ctx.moveTo(snake.x, snake.y);
-    for (let i = 0; i < snake.segments.length; i++) {
-        ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
-    }
-    ctx.stroke();
-
-    // --- 2. Main Body Color ---
-    ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = snake.color;
-    ctx.lineWidth = w;
-
-    ctx.beginPath();
-    ctx.moveTo(snake.x, snake.y);
-    for (let i = 0; i < snake.segments.length; i++) {
-        ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
-    }
-    ctx.stroke();
-
-    // --- 3. Inner White Core (The Energy) ---
-    ctx.strokeStyle = '#ffffff'; // Pure energy center
-    ctx.lineWidth = w * 0.3;
-    ctx.globalAlpha = 0.8;
-
-    ctx.beginPath();
-    ctx.moveTo(snake.x, snake.y);
-    for (let i = 0; i < snake.segments.length; i++) {
-        ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
-    }
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-
-    // --- Head ---
     const headSize = w * 0.85 * snake.headScale;
+
+    ctx.save();
     ctx.translate(snake.x, snake.y);
-    // Rotating head based on direction? No, just use direction
     const angle = Math.atan2(DIR_VECTORS[snake.dir].y, DIR_VECTORS[snake.dir].x);
     ctx.rotate(angle);
 
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = snake.color;
-    ctx.shadowBlur = 20;
+    if (snake.style && snake.style.renderHead) {
+        snake.style.renderHead(ctx, snake, headSize);
+    }
 
-    // Simplify head shape to circle for smoothness, but add eyes
-    ctx.beginPath();
-    ctx.arc(0, 0, headSize, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Eyes
-    ctx.fillStyle = '#000000';
-    ctx.shadowBlur = 0;
-    ctx.beginPath();
-    ctx.arc(headSize * 0.3, -headSize * 0.4, headSize * 0.25, 0, Math.PI * 2); // Right eye
-    ctx.arc(headSize * 0.3, headSize * 0.4, headSize * 0.25, 0, Math.PI * 2);  // Left eye
-    ctx.fill();
-
-    ctx.rotate(-angle);
-    ctx.translate(-snake.x, -snake.y);
+    ctx.restore();
 
     // King crown
     if (currentKing === snake) {
@@ -1590,10 +2507,11 @@ function startGame(nickname) {
     snakes = [];
     foods = [];
     particles = [];
+    floatingTexts = [];
 
-    // Create player
-    const playerColor = pick(NEON_COLORS);
-    player = new Snake(nickname || 'Player', playerColor, true);
+    // Create player with Style 0 (CYBER)
+    const playerStyle = SNAKE_STYLES[0];
+    player = new Snake(nickname || 'Player', playerStyle, true);
     snakes.push(player);
 
     // Camera to player
@@ -1601,18 +2519,13 @@ function startGame(nickname) {
     camera.y = player.y;
     camera.zoom = 1.0;
 
-    // Create bots
-    const usedNames = new Set([player.name]);
-    const shuffledColors = [...NEON_COLORS].sort(() => Math.random() - 0.5);
-    for (let i = 0; i < BOT_COUNT; i++) {
-        let name;
-        do {
-            name = pick(BOT_NAMES);
-        } while (usedNames.has(name));
-        usedNames.add(name);
+    // Create bots with remaining styles (1-9)
+    for (let i = 1; i < SNAKE_STYLES.length; i++) {
+        const style = SNAKE_STYLES[i];
+        const name = style.name;
 
-        const color = shuffledColors[i % shuffledColors.length];
-        const bot = new Snake(name, color);
+        const bot = new Snake(name, style, false);
+
         // Give bots some starting score
         bot.score = randInt(10, 150);
         // Add segments matching their score
