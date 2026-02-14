@@ -19,6 +19,7 @@ const MAX_SNAKE_WIDTH = 14;
 const WIDTH_GROWTH_RATE = 2000; // score needed for max width
 const CAMERA_LERP = 0.08;
 const MINIMAP_SIZE = 180;
+const REFERENCE_WIDTH = 1920;
 
 // ---- Snake Styles (Visuals & Personality) ----
 const SNAKE_STYLES = [
@@ -1036,11 +1037,17 @@ let deathTime = 0;
 let currentKing = null;
 let hudUpdateTimer = 0;
 let playerSnakeStyleIndex = 0;
+let screenScale = 1.0;
 
 // ---- Resize ----
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
+    // Scale based on the larger dimension to maintain consistent visual size
+    // regardless of orientation (landscape vs portrait).
+    const maxDim = Math.max(canvas.width, canvas.height);
+    screenScale = maxDim / REFERENCE_WIDTH;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -1865,7 +1872,7 @@ function render() {
         ctx.translate(sx, sy);
     }
 
-    ctx.scale(camera.zoom, camera.zoom);
+    ctx.scale(camera.zoom * screenScale, camera.zoom * screenScale);
     ctx.translate(-camera.x, -camera.y);
 
     // Draw grid
@@ -1897,8 +1904,8 @@ function drawGrid() {
     const h = canvas.height;
 
     // Visible bounds
-    const halfW = (w / 2) / camera.zoom;
-    const halfH = (h / 2) / camera.zoom;
+    const halfW = (w / 2) / (camera.zoom * screenScale);
+    const halfH = (h / 2) / (camera.zoom * screenScale);
     const left = camera.x - halfW - GRID_SIZE;
     const right = camera.x + halfW + GRID_SIZE;
     const top = camera.y - halfH - GRID_SIZE;
@@ -1966,8 +1973,8 @@ function drawFood() {
     const time = performance.now() / 1000;
 
     // Only draw food in visible range
-    const halfW = (canvas.width / 2) / camera.zoom;
-    const halfH = (canvas.height / 2) / camera.zoom;
+    const halfW = (canvas.width / 2) / (camera.zoom * screenScale);
+    const halfH = (canvas.height / 2) / (camera.zoom * screenScale);
     const viewLeft = camera.x - halfW - 50;
     const viewRight = camera.x + halfW + 50;
     const viewTop = camera.y - halfH - 50;
@@ -2289,8 +2296,8 @@ function drawMinimap() {
 
     // Camera viewport indicator
     if (player) {
-        const vw = (canvas.width / camera.zoom) * scale;
-        const vh = (canvas.height / camera.zoom) * scale;
+        const vw = (canvas.width / (camera.zoom * screenScale)) * scale;
+        const vh = (canvas.height / (camera.zoom * screenScale)) * scale;
         const vx = camera.x * scale - vw / 2;
         const vy = camera.y * scale - vh / 2;
 
