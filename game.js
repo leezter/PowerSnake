@@ -1459,8 +1459,25 @@ class Snake {
         this.boostIntensity = 0;
 
         const margin = 500;
-        this.x = rand(margin, ARENA_SIZE - margin);
-        this.y = rand(margin, ARENA_SIZE - margin);
+        // Attempt to find a safe spawn location
+        let safe = false;
+        let attempts = 0;
+        while (!safe && attempts < 10) {
+            this.x = rand(margin, ARENA_SIZE - margin);
+            this.y = rand(margin, ARENA_SIZE - margin);
+            safe = true;
+            for (const other of snakes) {
+                if (other !== this && other.alive) {
+                    const d = dist({ x: this.x, y: this.y }, { x: other.x, y: other.y });
+                    if (d < 500) {
+                        safe = false;
+                        break;
+                    }
+                }
+            }
+            attempts++;
+        }
+
         this.lastX = this.x;
         this.lastY = this.y;
         this.segments = [];
@@ -1614,8 +1631,17 @@ function spawnFood(count) {
 }
 
 function maintainFood() {
-    if (foods.length < FOOD_COUNT * 0.6) {
-        spawnFood(FOOD_COUNT - foods.length);
+    // Safety Net: If food drops too low (due to high consumption vs 15s delay),
+    // force immediate spawning to keep the game playable.
+    // This acts as a floor (150 food) while the top 150 cycles on the 15s timer.
+    const safetyThreshold = FOOD_COUNT * 0.5;
+    if (foods.length < safetyThreshold) {
+        spawnFood(1); // Heal slowly frame-by-frame or batch? 
+        // Let's spawn enough to stay above threshold, but maybe just 1 per frame to be smooth
+        // Actually, just fill it to threshold if it's very low, or spawn 1.
+        // Given maintainFood runs every frame (or collision check?), let's check game loop.
+        // It runs once per frame. Spawning 1 per frame is plenty fast (60/sec).
+        spawnFood(1);
     }
 }
 
@@ -1776,6 +1802,13 @@ function checkCollisions() {
                 particles.push(new Particle(f.x, f.y, f.color, 'shockwave'));
 
                 foods.splice(i, 1);
+
+                // Replenish food after 15 seconds
+                setTimeout(() => {
+                    if (gameRunning && foods.length < FOOD_COUNT) {
+                        spawnFood(1);
+                    }
+                }, 15000);
             }
         }
     }
