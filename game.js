@@ -448,6 +448,7 @@ class Snake {
         if (!this.alive) return;
         this.alive = false;
         if (this.isPlayer) {
+            screenShake = 25; // Massive shake
             soundManager.playDie();
         }
         this.respawnTimer = rand(3, 6);
@@ -501,6 +502,7 @@ class Snake {
 }
 
 // ---- Particle Class ----
+// ---- Particle Class ----
 class Particle {
     constructor(x, y, color, type) {
         this.x = x;
@@ -509,31 +511,45 @@ class Particle {
         this.type = type;
         this.life = 1;
         this.maxLife = 1;
+        this.angle = rand(0, Math.PI * 2);
+        this.angVel = rand(-0.2, 0.2);
 
         if (type === 'explosion') {
-            this.vx = rand(-4, 4);
-            this.vy = rand(-4, 4);
-            this.maxLife = rand(0.5, 1.2);
+            const speed = rand(2, 8);
+            const dir = rand(0, Math.PI * 2);
+            this.vx = Math.cos(dir) * speed;
+            this.vy = Math.sin(dir) * speed;
+            this.maxLife = rand(0.5, 0.9);
             this.life = this.maxLife;
-            this.size = rand(2, 6);
+            this.size = rand(3, 8);
+            this.shape = 'rect'; // Digital debris
+            this.drag = 0.94;
         } else if (type === 'boost') {
             this.vx = rand(-2, 2);
             this.vy = rand(-2, 2);
-            this.maxLife = rand(0.2, 0.5);
-            this.life = this.maxLife;
-            this.size = rand(1, 3);
-        } else if (type === 'collect') {
-            this.vx = rand(-3, 3);
-            this.vy = rand(-3, 3);
             this.maxLife = rand(0.3, 0.6);
             this.life = this.maxLife;
             this.size = rand(2, 4);
+            this.shape = 'circle';
+            this.drag = 0.92;
+        } else if (type === 'collect') {
+            const speed = rand(3, 7);
+            const dir = rand(0, Math.PI * 2);
+            this.vx = Math.cos(dir) * speed;
+            this.vy = Math.sin(dir) * speed;
+            this.maxLife = rand(0.4, 0.8);
+            this.life = this.maxLife;
+            this.size = rand(3, 6);
+            this.shape = 'star'; // Sparkles
+            this.drag = 0.9;
         } else if (type === 'shockwave') {
             this.vx = 0;
             this.vy = 0;
-            this.life = 0.4;
-            this.maxLife = 0.4;
+            this.life = 0.5;
+            this.maxLife = 0.5;
             this.size = 10;
+            this.shape = 'ring';
+            this.drag = 1;
         }
     }
 
@@ -541,16 +557,23 @@ class Particle {
         this.life -= dt;
         this.x += this.vx;
         this.y += this.vy;
-        this.vx *= 0.96;
-        this.vy *= 0.96;
+
+        if (this.drag) {
+            this.vx *= this.drag;
+            this.vy *= this.drag;
+        }
+
+        this.angle += this.angVel;
 
         if (this.type === 'shockwave') {
-            this.size += 80 * dt; // Expand
+            this.size += 150 * dt; // Expand faster
         }
     }
 
     get alpha() {
-        return clamp(this.life / this.maxLife, 0, 1);
+        // Curve the alpha for smoother fade
+        const t = clamp(this.life / this.maxLife, 0, 1);
+        return t * t;
     }
 
     get dead() {
@@ -685,6 +708,7 @@ function checkCollisions() {
                     // Play kill success sound if player killed someone
                     if (other.isPlayer) {
                         soundManager.playKill();
+                        screenShake = 20; // Massive impact
                     } else if (snake.isPlayer) {
                         onPlayerDeath();
                     }
@@ -710,6 +734,7 @@ function checkCollisions() {
                     snake.die();
                     if (other.isPlayer) {
                         soundManager.playKill();
+                        screenShake = 15; // Rewarding shake
                     } else if (snake.isPlayer) {
                         onPlayerDeath();
                     }
@@ -752,9 +777,9 @@ function checkCollisions() {
                 snake.foodEaten++;
 
                 // Satisfying Logic
-                snake.headScale = 1.4; // Gulp
+                snake.headScale = 1.6; // Bigger Gulp
                 if (snake.isPlayer) {
-                    screenShake = 4;
+                    screenShake = 5 + f.value; // Crunchier
                     soundManager.playCollect();
                 }
 
@@ -839,7 +864,11 @@ function render() {
     const w = canvas.width;
     const h = canvas.height;
 
-    ctx.fillStyle = '#06060c';
+    // Dark background with subtle gradient
+    const gradient = ctx.createRadialGradient(w / 2, h / 2, h / 2, w / 2, h / 2, w);
+    gradient.addColorStop(0, '#0a0a14');
+    gradient.addColorStop(1, '#000000');
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
 
     // Camera
@@ -871,14 +900,14 @@ function render() {
     // Draw arena border
     drawArenaBorder();
 
+    // Draw boosts under everything
+    drawAllBoostLightnings();
+
     // Draw food
     drawFood();
 
     // Draw snakes
     drawSnakes();
-
-    // Draw boost lightning connections
-    drawAllBoostLightnings();
 
     // Draw particles
     drawParticles();
@@ -904,64 +933,112 @@ function drawGrid() {
     const startX = Math.floor(left / GRID_SIZE) * GRID_SIZE;
     const startY = Math.floor(top / GRID_SIZE) * GRID_SIZE;
 
-    ctx.strokeStyle = 'rgba(30, 40, 70, 0.4)';
-    ctx.lineWidth = 0.5;
-    ctx.beginPath();
+    ctx.lineWidth = 1;
 
     for (let x = startX; x <= right; x += GRID_SIZE) {
         if (x < 0 || x > ARENA_SIZE) continue;
+
+        ctx.beginPath();
         ctx.moveTo(x, Math.max(0, top));
         ctx.lineTo(x, Math.min(ARENA_SIZE, bottom));
-    }
-    for (let y = startY; y <= bottom; y += GRID_SIZE) {
-        if (y < 0 || y > ARENA_SIZE) continue;
-        ctx.moveTo(Math.max(0, left), y);
-        ctx.lineTo(Math.min(ARENA_SIZE, right), y);
+
+        // Major lines every 5 cells
+        if (x % (GRID_SIZE * 5) === 0) {
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+            ctx.lineWidth = 2;
+        } else {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+        }
+        ctx.stroke();
     }
 
-    ctx.stroke();
+    for (let y = startY; y <= bottom; y += GRID_SIZE) {
+        if (y < 0 || y > ARENA_SIZE) continue;
+
+        ctx.beginPath();
+        ctx.moveTo(Math.max(0, left), y);
+        ctx.lineTo(Math.min(ARENA_SIZE, right), y);
+
+        if (y % (GRID_SIZE * 5) === 0) {
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+            ctx.lineWidth = 2;
+        } else {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+        }
+        ctx.stroke();
+    }
 }
 
 function drawArenaBorder() {
     ctx.strokeStyle = '#ff3355';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 6;
     ctx.shadowColor = '#ff3355';
-    ctx.shadowBlur = 30;
+    ctx.shadowBlur = 40;
+
+    // Draw animated border glow
+    const time = performance.now() / 500;
+    const alpha = 0.5 + Math.sin(time) * 0.2;
+
+    ctx.globalAlpha = alpha;
     ctx.strokeRect(0, 0, ARENA_SIZE, ARENA_SIZE);
+    ctx.globalAlpha = 1;
+
     ctx.shadowBlur = 0;
 }
 
 function drawFood() {
     const time = performance.now() / 1000;
 
-    // Only draw food in visible range for performance
+    // Only draw food in visible range
     const halfW = (canvas.width / 2) / camera.zoom;
     const halfH = (canvas.height / 2) / camera.zoom;
-    const viewLeft = camera.x - halfW - 20;
-    const viewRight = camera.x + halfW + 20;
-    const viewTop = camera.y - halfH - 20;
-    const viewBottom = camera.y + halfH + 20;
+    const viewLeft = camera.x - halfW - 50;
+    const viewRight = camera.x + halfW + 50;
+    const viewTop = camera.y - halfH - 50;
+    const viewBottom = camera.y + halfH + 50;
 
-    ctx.shadowBlur = 12;
     for (const f of foods) {
         if (f.x < viewLeft || f.x > viewRight || f.y < viewTop || f.y > viewBottom) continue;
-        const pulseSize = f.size + Math.sin(time * 3 + f.pulse) * 1.5;
 
+        const pulse = Math.sin(time * 4 + f.pulse);
+        const size = f.size + pulse * 1.5;
+
+        // Outer Glow Ring
         ctx.beginPath();
-        ctx.arc(f.x, f.y, pulseSize, 0, Math.PI * 2);
-        ctx.fillStyle = f.color;
+        ctx.arc(f.x, f.y, size + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = f.color;
+        ctx.lineWidth = 1.5;
         ctx.shadowColor = f.color;
+        ctx.shadowBlur = 10;
+        ctx.globalAlpha = 0.6 + pulse * 0.2;
+        ctx.stroke();
+
+        // Inner Core
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, size, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowBlur = 15;
+        ctx.globalAlpha = 1;
+        ctx.fill();
+
+        // Tinted core
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, size * 0.7, 0, Math.PI * 2);
+        ctx.fillStyle = f.color;
+        ctx.shadowBlur = 0;
         ctx.fill();
     }
     ctx.shadowBlur = 0;
 }
 
 function drawSnakes() {
-    // Sort so player is drawn last (on top)
     const sorted = [...snakes].filter(s => s.alive).sort((a, b) => {
         if (a.isPlayer) return 1;
         if (b.isPlayer) return -1;
-        return 0;
+        // Draw boosting snakes behind non-boosting to hide artifacts
+        return (a.boosting ? 0 : 1) - (b.boosting ? 0 : 1);
     });
 
     for (const snake of sorted) {
@@ -973,14 +1050,16 @@ function drawSnake(snake) {
     if (snake.segments.length < 2) return;
 
     const w = snake.width;
+    const time = performance.now() / 1000;
 
-    // Main body glow
+    // --- 1. Outer Glow (The Neon Halo) ---
     ctx.shadowColor = snake.color;
-    ctx.shadowBlur = 12 + snake.boostIntensity * 20;
+    ctx.shadowBlur = 20 + snake.boostIntensity * 25; // Massive glow when boosting
     ctx.strokeStyle = snake.color;
-    ctx.lineWidth = w;
+    ctx.lineWidth = w * 1.2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+    ctx.globalAlpha = 0.4;
 
     ctx.beginPath();
     ctx.moveTo(snake.x, snake.y);
@@ -989,10 +1068,12 @@ function drawSnake(snake) {
     }
     ctx.stroke();
 
-    // Inner lighter line
+    // --- 2. Main Body Color ---
+    ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = lightenColor(snake.color, 60);
-    ctx.lineWidth = w * 0.35;
+    ctx.strokeStyle = snake.color;
+    ctx.lineWidth = w;
+
     ctx.beginPath();
     ctx.moveTo(snake.x, snake.y);
     for (let i = 0; i < snake.segments.length; i++) {
@@ -1000,82 +1081,127 @@ function drawSnake(snake) {
     }
     ctx.stroke();
 
-    // Head
-    const headSize = w * 0.8 * snake.headScale;
+    // --- 3. Inner White Core (The Energy) ---
+    ctx.strokeStyle = '#ffffff'; // Pure energy center
+    ctx.lineWidth = w * 0.3;
+    ctx.globalAlpha = 0.8;
+
     ctx.beginPath();
-    ctx.arc(snake.x, snake.y, headSize, 0, Math.PI * 2);
+    ctx.moveTo(snake.x, snake.y);
+    for (let i = 0; i < snake.segments.length; i++) {
+        ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // --- Head ---
+    const headSize = w * 0.85 * snake.headScale;
+    ctx.translate(snake.x, snake.y);
+    // Rotating head based on direction? No, just use direction
+    const angle = Math.atan2(DIR_VECTORS[snake.dir].y, DIR_VECTORS[snake.dir].x);
+    ctx.rotate(angle);
+
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = snake.color;
     ctx.shadowBlur = 20;
-    ctx.fill();
-    ctx.shadowBlur = 0;
 
-    // King crown (uses cached currentKing)
+    // Simplify head shape to circle for smoothness, but add eyes
+    ctx.beginPath();
+    ctx.arc(0, 0, headSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes
+    ctx.fillStyle = '#000000';
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(headSize * 0.3, -headSize * 0.4, headSize * 0.25, 0, Math.PI * 2); // Right eye
+    ctx.arc(headSize * 0.3, headSize * 0.4, headSize * 0.25, 0, Math.PI * 2);  // Left eye
+    ctx.fill();
+
+    ctx.rotate(-angle);
+    ctx.translate(-snake.x, -snake.y);
+
+    // King crown
     if (currentKing === snake) {
-        drawCrown(snake.x, snake.y - w - 10);
+        drawCrown(snake.x, snake.y - w - 15);
     }
 
     // Name tag
     drawNameTag(snake);
-
-    // Boost electric effect (show when ramping)
-    if (snake.boostIntensity > 0.05) {
-        drawBoostEffect(snake);
-    }
 }
 
 function drawCrown(x, y) {
+    const bounce = Math.sin(performance.now() / 200) * 3;
     ctx.save();
-    ctx.translate(x, y);
+    ctx.translate(x, y + bounce);
     ctx.fillStyle = '#ffe600';
     ctx.shadowColor = '#ffe600';
     ctx.shadowBlur = 15;
 
     ctx.beginPath();
-    ctx.moveTo(-8, 4);
-    ctx.lineTo(-8, -2);
-    ctx.lineTo(-4, 1);
-    ctx.lineTo(0, -6);
-    ctx.lineTo(4, 1);
-    ctx.lineTo(8, -2);
-    ctx.lineTo(8, 4);
+    ctx.moveTo(-10, 5);
+    ctx.lineTo(-10, -5);
+    ctx.lineTo(-5, 0);
+    ctx.lineTo(0, -10);
+    ctx.lineTo(5, 0);
+    ctx.lineTo(10, -5);
+    ctx.lineTo(10, 5);
     ctx.closePath();
     ctx.fill();
 
-    ctx.shadowBlur = 0;
     ctx.restore();
 }
 
 function drawNameTag(snake) {
-    const fontSize = clamp(11 / camera.zoom, 10, 16);
+    if (snake.isPlayer) return; // Hide own name to reduce clutter or use UI
+
+    const fontSize = clamp(12 / camera.zoom, 10, 18);
     ctx.font = `600 ${fontSize}px Rajdhani, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText(snake.name, snake.x, snake.y - snake.width - 14);
 
-    // Score under name
-    ctx.font = `700 ${fontSize * 0.8}px Orbitron, sans-serif`;
-    ctx.fillStyle = snake.color;
-    ctx.globalAlpha = 0.6;
-    ctx.fillText(snake.score, snake.x, snake.y - snake.width - 2);
-    ctx.globalAlpha = 1;
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 3;
+    ctx.lineWidth = 3;
+    ctx.strokeText(snake.name, snake.x, snake.y - snake.width - 16);
+
+    ctx.fillStyle = '#fff';
+    ctx.fillText(snake.name, snake.x, snake.y - snake.width - 16);
+    ctx.shadowBlur = 0;
 }
 
 function drawBoostEffect(snake) {
+    // Electric crackle along the body
     const time = performance.now() / 1000;
-    for (let i = 0; i < 3; i++) {
-        const offset = Math.sin(time * 15 + i * 2) * 12;
-        const seg = snake.segments[Math.min(i * 3 + 2, snake.segments.length - 1)];
 
-        ctx.beginPath();
-        ctx.arc(seg.x + offset, seg.y + offset * 0.5, rand(1, 3), 0, Math.PI * 2);
-        ctx.fillStyle = '#ffe600';
-        ctx.shadowColor = '#ffe600';
-        ctx.shadowBlur = 8;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#ffe600';
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#ffe600';
+
+    ctx.beginPath();
+
+    // Draw some random arcs along the body
+    for (let i = 0; i < snake.segments.length - 1; i += 3) {
+        if (Math.random() > 0.3) continue;
+
+        const s1 = snake.segments[i];
+        const s2 = snake.segments[i + 1];
+
+        if (!s2) continue;
+
+        const midX = (s1.x + s2.x) / 2;
+        const midY = (s1.y + s2.y) / 2;
+
+        // Offset
+        const offX = rand(-10, 10);
+        const offY = rand(-10, 10);
+
+        ctx.moveTo(midX, midY);
+        ctx.lineTo(midX + offX, midY + offY);
     }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
 }
 
 function drawAllBoostLightnings() {
@@ -1087,7 +1213,6 @@ function drawAllBoostLightnings() {
 
         const start = { x: snake.x, y: snake.y };
         const end = snake.boostConnection;
-
         drawLightning(start.x, start.y, end.x, end.y, end.color);
     }
 }
@@ -1096,69 +1221,99 @@ function drawLightning(x1, y1, x2, y2, color) {
     const d = Math.hypot(x2 - x1, y2 - y1);
     if (d < 5) return;
 
-    const steps = Math.max(3, Math.floor(d / 15));
+    const steps = Math.max(2, Math.floor(d / 20));
 
-    // Core white bolt
-    ctx.shadowBlur = 15;
+    // Glowy path
+    ctx.shadowBlur = 20;
     ctx.shadowColor = color;
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
 
     ctx.beginPath();
     ctx.moveTo(x1, y1);
 
+    let px = x1;
+    let py = y1;
+
     for (let i = 1; i < steps; i++) {
         const t = i / steps;
+        const tx = x1 + (x2 - x1) * t;
+        const ty = y1 + (y2 - y1) * t;
 
-        let tx = x1 + (x2 - x1) * t;
-        let ty = y1 + (y2 - y1) * t;
+        // Jagged offset
+        const off = (Math.random() - 0.5) * 15;
+        const perpX = -(y2 - y1) / d;
+        const perpY = (x2 - x1) / d;
 
-        // Jitter
-        const jitter = rand(-8, 8);
-        tx += jitter;
-        ty += jitter;
+        px = tx + perpX * off;
+        py = ty + perpY * off;
 
-        ctx.lineTo(tx, ty);
+        ctx.lineTo(px, py);
     }
-
     ctx.lineTo(x2, y2);
     ctx.stroke();
 
-    // Colored glow/aura (wider, lower opacity)
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 4;
-    ctx.globalAlpha = 0.5;
-    ctx.stroke();
-
-    ctx.globalAlpha = 1;
 }
 
 function drawParticles() {
     for (const p of particles) {
         if (p.dead) continue;
 
+        ctx.globalAlpha = p.alpha;
+
         if (p.type === 'shockwave') {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.lineWidth = 3 * p.alpha;
+            ctx.lineWidth = 4 * p.alpha;
             ctx.strokeStyle = p.color;
-            ctx.globalAlpha = p.alpha;
             ctx.stroke();
-            ctx.globalAlpha = 1;
-            continue;
+        } else if (p.shape === 'rect') {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 8;
+            const s = p.size * p.alpha;
+            ctx.fillRect(-s / 2, -s / 2, s, s);
+            ctx.restore();
+        } else if (p.shape === 'star') {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+
+            const s = p.size * p.alpha;
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 10;
+
+            // Draw simple diamond/star
+            ctx.beginPath();
+            ctx.moveTo(0, -s);
+            ctx.lineTo(s * 0.3, -s * 0.3);
+            ctx.lineTo(s, 0);
+            ctx.lineTo(s * 0.3, s * 0.3);
+            ctx.lineTo(0, s);
+            ctx.lineTo(-s * 0.3, s * 0.3);
+            ctx.lineTo(-s, 0);
+            ctx.lineTo(-s * 0.3, -s * 0.3);
+            ctx.fill();
+
+            ctx.restore();
+        } else {
+            // Circle default
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * p.alpha, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 6;
+            ctx.fill();
         }
 
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * p.alpha, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = p.alpha * 0.8;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 6;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
     }
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
 }
 
 function drawFloatingTexts() {
@@ -1168,13 +1323,16 @@ function drawFloatingTexts() {
 }
 
 function lightenColor(hex, amount) {
-    let r = parseInt(hex.slice(1, 3), 16);
-    let g = parseInt(hex.slice(3, 5), 16);
-    let b = parseInt(hex.slice(5, 7), 16);
-    r = Math.min(255, r + amount);
-    g = Math.min(255, g + amount);
-    b = Math.min(255, b + amount);
-    return `rgb(${r},${g},${b})`;
+    // Utility preserved
+    try {
+        let r = parseInt(hex.slice(1, 3), 16);
+        let g = parseInt(hex.slice(3, 5), 16);
+        let b = parseInt(hex.slice(5, 7), 16);
+        r = Math.min(255, r + amount);
+        g = Math.min(255, g + amount);
+        b = Math.min(255, b + amount);
+        return `rgb(${r},${g},${b})`;
+    } catch (e) { return hex; }
 }
 
 // ---- Minimap ----
