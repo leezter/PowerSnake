@@ -95,6 +95,41 @@ Food items are attracted to snake heads when they come within range, creating a 
 - **Camera:** Lerps to player position `(x, y)` and zooms out based on length.
 - **Minimap:** Scaled rendering of all snakes relative to `ARENA_SIZE` (6000).
 
+### 3.1 Snake Styles (`SNAKE_STYLES`)
+The game features **25 unique visual styles**, each with distinct rendering logic (`renderBody`, `renderHead`) and behavioral updates (`update`) for particle effects.
+
+**Rendering Architecture:**
+- **Body:** Custom loop in `renderBody` handles diverse shapes (squares, jagged lines, flowing rivers) instead of standard circles.
+- **Head:** Unique geometry per style (eyes, crests, glowing cores).
+- **Particles:** Styles like *Inferno*, *Vampire*, and *Frost* spawn thematic particles (embers, sparkles) during the `update` loop.
+
+**Style List:**
+1.  **CYBER:** Standard neon blue/magenta.
+2.  **INFERNO:** Fiery body with jitter and ember particles.
+3.  **VOID:** Dark purple with event horizon glow.
+4.  **GLITCH:** Digital artifacts and square segments.
+5.  **PLASMA:** Pulsing energy width.
+6.  **MIDAS:** Solid gold with metallic sheen.
+7.  **TOXIN:** Bubbling dashed lines.
+8.  **PRISM:** Cycling RGB spectrum.
+9.  **GHOST:** Semi-transparent stealth.
+10. **CIRCUIT:** Wireframe/microchip aesthetic.
+11. **RADIUM:** Radioactive rings.
+12. **COSMOS:** Deep blue with parallax stars.
+13. **VAMPIRE:** Bat-wing segments and blood particles.
+14. **PIXEL:** Retro raw pixels with debris.
+15. **CANDY:** Pink/blue stripes.
+16. **MAGMA:** Crusted lava with fire particles.
+17. **FROST:** Ice shards with sparkles.
+18. **VOLTAIC:** Lightning bolt with sparks.
+19. **AZURE:** Flowing river effect.
+20. **VERDANT:** Organic vine with leaves.
+21. **CHROME:** Metallic reflection.
+22. **SKETCH:** Hand-drawn white pencil.
+23. **SPECTRUM:** Rainbow trail.
+24. **MATRIX:** Falling binary code.
+25. **SAMURAI:** Plated armor with crest.
+
 ## 4. Key Constants to Tune
 
 | Constant | Default | Effect |
@@ -104,7 +139,7 @@ Food items are attracted to snake heads when they come within range, creating a 
 | `BOOST_SPEED` | 11.6 | Max speed when boosting (before food multiplier) |
 | `BOOST_RAMP_DURATION` | 3.0 | Seconds to reach max boost |
 | `FOOD_COUNT` | 300 | Amount of food pellets |
-| `BOT_COUNT` | 29 | Number of AI enemies |
+| `BOT_COUNT` | 24 | Number of AI enemies (Total 25 snakes) |
 | `WIDTH_GROWTH_RATE` | 2000 | Score needed to reach max thickness |
 
 ## 5. Sound System (`SoundManager`)
