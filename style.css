@@ -47,7 +47,7 @@ body::after {
     content: "";
     position: fixed;
     inset: 0;
-    background: radial-gradient(circle, transparent 60%, #000 100%);
+    background: radial-gradient(circle, transparent 90%, #000 100%);
     pointer-events: none;
     z-index: 900;
     opacity: 0.6;

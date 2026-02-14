@@ -1846,7 +1846,8 @@ function render() {
     const h = canvas.height;
 
     // Dark background with subtle gradient
-    const gradient = ctx.createRadialGradient(w / 2, h / 2, h / 2, w / 2, h / 2, w);
+    const maxDim = Math.max(w, h);
+    const gradient = ctx.createRadialGradient(w / 2, h / 2, maxDim / 2, w / 2, h / 2, maxDim);
     gradient.addColorStop(0, '#0a0a14');
     gradient.addColorStop(1, '#000000');
     ctx.fillStyle = gradient;
