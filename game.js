@@ -2574,9 +2574,9 @@ function onPlayerDeath() {
     finalLength.textContent = player.segments.length;
     finalRank.textContent = `#${rank}`;
 
-    // Short delay before showing death screen
+    // Short delay before showing death screen (Game continues running)
     setTimeout(() => {
-        gameRunning = false;
+        // Do NOT stop gameRunning.
         hud.classList.add('hidden');
         deathScreen.classList.remove('hidden');
     }, 1200);
@@ -3685,9 +3685,40 @@ playButton.addEventListener('click', () => {
 });
 
 replayButton.addEventListener('click', () => {
-    soundManager.resume();
-    startGame(player ? player.name : 'Player');
+    // soundManager.resume();
+    // startGame(player ? player.name : 'Player');
+    respawnPlayer();
 });
+
+function respawnPlayer() {
+    if (!player) return;
+    soundManager.resume();
+
+    // Remove old player from snakes array
+    snakes = snakes.filter(s => s !== player);
+
+    // Create new player
+    const playerStyle = SNAKE_STYLES[playerSnakeStyleIndex];
+    const name = (player && player.name) || 'Player';
+    player = new Snake(name, playerStyle, true);
+
+    snakes.push(player);
+
+    // Reset Camera Immediately
+    camera.x = player.x;
+    camera.y = player.y;
+    camera.zoom = 1.0;
+
+    // UI Reset
+    deathScreen.classList.add('hidden');
+    hud.classList.remove('hidden');
+    deathTime = 0;
+
+    // Reset scores/boosts/shake
+    screenShake = 0;
+
+    soundManager.playStart();
+}
 
 nicknameInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
