@@ -735,3 +735,49 @@ body::before {
     color: var(--neon-cyan);
     text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
 }
+
+/* ============================================
+   Portrait Mobile Fixes (Eliminate Screen)
+   ============================================ */
+@media (max-width: 768px) and (orientation: portrait) {
+    .death-stats {
+        flex-direction: column;
+        gap: 10px;
+        /* Tighter gap */
+        margin-bottom: 30px;
+    }
+
+    .stat {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        /* Horizontal layout, compact vertical padding */
+        text-align: left;
+    }
+
+    .stat-label {
+        margin-bottom: 0;
+        font-size: 0.9rem;
+        /* Readable size */
+    }
+
+    .stat-value {
+        font-size: 1.4rem;
+        /* Adjusted for balance */
+    }
+
+    .death-title {
+        font-size: 2.2rem;
+        /* Avoid wrapping or taking too much space */
+        margin-bottom: 25px;
+    }
+
+    .overlay-content {
+        width: 85%;
+        /* slightly narrower to ensure breathing room on edges */
+        padding: 30px 20px;
+    }
+}

@@ -3844,8 +3844,12 @@ function renderSnakePreview(canvas, style) {
     ctx.restore();
 }
 
+// ---- State ----
+let selectionSource = 'start';
+
 // ---- Additional Event Listeners ----
 selectSnakeButton.addEventListener('click', () => {
+    selectionSource = 'start';
     soundManager.init(); // Ensure audio context is ready
     soundManager.resume();
 
@@ -3854,9 +3858,22 @@ selectSnakeButton.addEventListener('click', () => {
     snakeSelectionScreen.classList.remove('hidden');
 });
 
+deathSelectionButton.addEventListener('click', () => {
+    soundManager.resume();
+    selectionSource = 'death';
+    initSelectionScreen();
+    deathScreen.classList.add('hidden');
+    snakeSelectionScreen.classList.remove('hidden');
+});
+
 backButton.addEventListener('click', () => {
     soundManager.resume();
     snakeSelectionScreen.classList.add('hidden');
-    startScreen.classList.remove('hidden');
+
+    if (selectionSource === 'death') {
+        deathScreen.classList.remove('hidden');
+    } else {
+        startScreen.classList.remove('hidden');
+    }
 });
 
