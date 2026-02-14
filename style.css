@@ -203,7 +203,15 @@ body::before {
     letter-spacing: 1px;
 }
 
-/* Neon Button */
+
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+/* Neon Button Variants */
 .neon-button {
     font-family: var(--font-display);
     font-weight: 800;
@@ -211,21 +219,30 @@ body::before {
     letter-spacing: 4px;
     padding: 18px 0;
     width: 100%;
-
     color: #000;
     background: var(--neon-cyan);
-
     border: none;
     border-radius: 12px;
     cursor: pointer;
-
     position: relative;
     overflow: hidden;
     transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.4);
+}
 
-    box-shadow:
-        0 0 20px rgba(0, 240, 255, 0.5),
-        inset 0 2px 0 rgba(255, 255, 255, 0.4);
+.neon-button.secondary-btn {
+    background: transparent;
+    border: 2px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    font-size: 1rem;
+    padding: 14px 0;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.neon-button.secondary-btn:hover {
+    background: rgba(0, 240, 255, 0.1);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+    transform: translateY(-2px);
 }
 
 .neon-button::before {
@@ -241,9 +258,10 @@ body::before {
 
 .neon-button:hover {
     transform: translateY(-3px) scale(1.02);
-    box-shadow:
-        0 0 40px rgba(0, 240, 255, 0.8),
-        0 0 80px rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 40px rgba(0, 240, 255, 0.8), 0 0 80px rgba(0, 240, 255, 0.3);
+}
+
+.neon-button.primary-btn:hover {
     background: #4dffff;
 }
 
@@ -599,4 +617,121 @@ body::before {
         top: 80px;
         /* moved down so it doesn't overlap leaderboard/minimap */
     }
+
+    .snake-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 10px;
+        max-height: 50vh;
+    }
+
+    .huge-modal {
+        width: 95%;
+        padding: 20px;
+    }
+}
+
+/* ============================================
+   Snake Selection Screen
+   ============================================ */
+.huge-modal {
+    max-width: 900px;
+    width: 90%;
+    padding: 40px;
+    background: linear-gradient(145deg, rgba(20, 20, 35, 0.95), rgba(5, 5, 10, 0.98));
+}
+
+.selection-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: 4px;
+    color: #fff;
+    margin-bottom: 30px;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.snake-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 10px;
+    padding-bottom: 20px;
+    /* Space for shadow */
+
+    /* Scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: var(--neon-cyan) rgba(255, 255, 255, 0.1);
+}
+
+.snake-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.snake-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.snake-grid::-webkit-scrollbar-thumb {
+    background-color: var(--neon-cyan);
+    border-radius: 3px;
+    box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.snake-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.snake-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.snake-card.selected {
+    background: rgba(0, 240, 255, 0.1);
+    border: 2px solid var(--neon-cyan);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.3), inset 0 0 20px rgba(0, 240, 255, 0.1);
+}
+
+.snake-card canvas {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-bottom: 15px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1/1;
+}
+
+.snake-name {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    transition: color 0.2s;
+}
+
+.snake-card:hover .snake-name {
+    color: #fff;
+}
+
+.snake-card.selected .snake-name {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
 }

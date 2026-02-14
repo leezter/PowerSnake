@@ -1016,6 +1016,10 @@ const finalScore = document.getElementById('finalScore');
 const finalLength = document.getElementById('finalLength');
 const finalRank = document.getElementById('finalRank');
 const boostIndicator = document.getElementById('boostIndicator');
+const selectSnakeButton = document.getElementById('selectSnakeButton');
+const snakeSelectionScreen = document.getElementById('snakeSelectionScreen');
+const snakeGrid = document.getElementById('snakeGrid');
+const backButton = document.getElementById('backButton');
 
 // ---- Game State ----
 let gameRunning = false;
@@ -1031,6 +1035,7 @@ let animationId = null;
 let deathTime = 0;
 let currentKing = null;
 let hudUpdateTimer = 0;
+let playerSnakeStyleIndex = 0;
 
 // ---- Resize ----
 function resizeCanvas() {
@@ -2509,8 +2514,8 @@ function startGame(nickname) {
     particles = [];
     floatingTexts = [];
 
-    // Create player with Style 0 (CYBER)
-    const playerStyle = SNAKE_STYLES[0];
+    // Create player with selected style
+    const playerStyle = SNAKE_STYLES[playerSnakeStyleIndex];
     player = new Snake(nickname || 'Player', playerStyle, true);
     snakes.push(player);
 
@@ -3698,3 +3703,129 @@ nicknameInput.addEventListener('keydown', (e) => {
 window.addEventListener('load', () => {
     nicknameInput.focus();
 });
+
+// ---- Snake Selection UI ----
+
+function initSelectionScreen() {
+    snakeGrid.innerHTML = '';
+
+    SNAKE_STYLES.forEach((style, index) => {
+        const card = document.createElement('div');
+        card.className = `snake-card ${index === playerSnakeStyleIndex ? 'selected' : ''}`;
+        card.onclick = () => selectSnake(index);
+
+        // Canvas for preview
+        const canvas = document.createElement('canvas');
+        canvas.width = 100;
+        canvas.height = 100;
+        // Make sure canvas background is transparent or handled by CSS
+        card.appendChild(canvas);
+
+        // Name
+        const name = document.createElement('div');
+        name.className = 'snake-name';
+        name.textContent = style.name;
+        card.appendChild(name);
+
+        snakeGrid.appendChild(card);
+
+        // Render preview
+        // Use a timeout to ensure canvas is ready/layout is done if needed, though not strictly necessary here
+        requestAnimationFrame(() => renderSnakePreview(canvas, style));
+    });
+}
+
+function selectSnake(index) {
+    if (index < 0 || index >= SNAKE_STYLES.length) return;
+
+    playerSnakeStyleIndex = index;
+
+    // Update UI
+    const cards = snakeGrid.children;
+    for (let i = 0; i < cards.length; i++) {
+        cards[i].classList.toggle('selected', i === index);
+    }
+
+    // Play a distinct sound for selection
+    if (soundManager && soundManager.ctx) {
+        if (soundManager.ctx.state === 'suspended') soundManager.resume();
+
+        // Play a robotic confirmation or style-specific tone
+        const freq = 200 + (index * 20);
+        soundManager.playTone({ freq: freq, type: 'triangle', duration: 0.1, vol: 0.2, slide: 50, pan: 0 });
+    }
+}
+
+function renderSnakePreview(canvas, style) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Check if style has renderBody/renderHead
+    if (!style.renderBody) return;
+
+    // Create a dummy snake object for rendering
+    // We create a "S" shape or a circle
+    const dummySnake = {
+        x: w / 2,
+        y: h / 2,
+        width: 6,
+        segments: [],
+        style: style,
+        boostIntensity: 0,
+        headScale: 1.0,
+        alive: true
+    };
+
+    // Create points
+    const points = 10;
+    // Spiral
+    for (let i = 0; i < points; i++) {
+        const angle = (i * 0.5) - 1.0;
+        const radius = 25 - (i * 1.5);
+        dummySnake.segments.push({
+            x: w / 2 + Math.cos(angle) * radius - (i * 2) + 10,
+            y: h / 2 + Math.sin(angle) * (radius * 0.8) + (i * 2) - 5
+        });
+    }
+
+    dummySnake.x = dummySnake.segments[0].x;
+    dummySnake.y = dummySnake.segments[0].y;
+
+    // Draw Body
+    ctx.save();
+    // Scale up for better visibility
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(1.2, 1.2);
+    ctx.translate(-w / 2, -h / 2);
+
+    style.renderBody(ctx, dummySnake);
+
+    // Head
+    const headSize = dummySnake.width * 0.9;
+    ctx.translate(dummySnake.x, dummySnake.y);
+    // Rotate head slightly to match the "movement"
+    ctx.rotate(-0.5);
+    style.renderHead(ctx, dummySnake, headSize);
+
+    ctx.restore();
+}
+
+// ---- Additional Event Listeners ----
+selectSnakeButton.addEventListener('click', () => {
+    soundManager.init(); // Ensure audio context is ready
+    soundManager.resume();
+
+    initSelectionScreen();
+    startScreen.classList.add('hidden');
+    snakeSelectionScreen.classList.remove('hidden');
+});
+
+backButton.addEventListener('click', () => {
+    soundManager.resume();
+    snakeSelectionScreen.classList.add('hidden');
+    startScreen.classList.remove('hidden');
+});
+

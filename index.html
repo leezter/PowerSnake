@@ -25,11 +25,25 @@
                 <input type="text" id="nicknameInput" maxlength="15" placeholder="Enter nickname..." autocomplete="off"
                     spellcheck="false">
             </div>
-            <button id="playButton" class="neon-button">PLAY</button>
+            <div class="button-group">
+                <button id="playButton" class="neon-button primary-btn">PLAY</button>
+                <button id="selectSnakeButton" class="neon-button secondary-btn">SELECT SNAKE</button>
+            </div>
             <div class="controls-hint">
                 <p><span class="key">W A S D</span> or <span class="key">↑ ← ↓ →</span> to move</p>
                 <p>Ride close to others for a <span class="accent">SPEED BOOST</span></p>
             </div>
+        </div>
+    </div>
+
+    <!-- Snake Selection Screen -->
+    <div id="snakeSelectionScreen" class="overlay hidden">
+        <div class="overlay-content huge-modal">
+            <h2 class="selection-title">CHOOSE YOUR <span class="accent">STYLE</span></h2>
+            <div id="snakeGrid" class="snake-grid">
+                <!-- Javascript will populate this -->
+            </div>
+            <button id="backButton" class="neon-button secondary-btn">CONFIRM SELECTION</button>
         </div>
     </div>
 
