@@ -92,8 +92,58 @@ Food items are attracted to snake heads when they come within range, creating a 
 
 - **Neon Glow:** Uses `ctx.shadowBlur` and `ctx.shadowColor`.
 - **Dynamic Width:** Snake width grows with score (`MIN_SNAKE_WIDTH` to `MAX_SNAKE_WIDTH`).
-- **Camera:** Lerps to player position `(x, y)` and zooms out based on length.
+- **Camera:** Leads ahead of the player's head using a triple-stage smoothing pipeline (see §3.2).
+- **Screen Scaling:** Responsive scaling keeps the arena visible across all screen sizes (see §3.3).
 - **Minimap:** Scaled rendering of all snakes relative to `ARENA_SIZE` (6000).
+
+### 3.2 Camera System
+The camera centers on a **lookahead point** in front of the snake's head, giving the player more visibility in their direction of travel. The transition between positions uses a **triple-stage cascaded exponential filter** (third-order) for ultra-smooth motion.
+
+**Lookahead:**
+*   **Target Point:** `player position + direction × (80 + speed × 25)`.
+*   The offset scales with speed — when boosting, the camera leads further ahead.
+*   The direction is taken directly from the snake's cardinal `DIR_VECTORS` (no angular interpolation), so turns produce straight-line camera transitions rather than circular sweeps.
+
+**Triple-Stage Smoothing (Gaussian-like response):**
+
+Each stage is a dt-independent exponential smoother: `lerp(current, target, 1 - exp(-dt × rate))`.
+
+| Stage | Rate | Time Constant | State Fields | Purpose |
+|---|---|---|---|---|
+| **Stage 1** | 8.0 | ~0.12s | `camera.stX/stY` | Fast initial smoothing — absorbs the raw target jump |
+| **Stage 2** | 5.5 | ~0.18s | `camera.st2X/st2Y` | Intermediate — softens onset/offset curves |
+| **Stage 3** | 4.0 | ~0.25s | `camera.x/y` | Final position — gentle inertial tracking |
+
+Three cascaded first-order filters approximate a **Gaussian impulse response**: the camera eases into turns, peaks smoothly, and eases out with no abrupt acceleration changes at any point.
+
+**Initialization:**
+*   On game start (`startGame`) and respawn (`respawnPlayer`), all three stages (`stX/stY`, `st2X/st2Y`, `x/y`) are set to the player's position plus the initial lookahead offset. This prevents a jarring camera sweep at spawn.
+
+**Zoom:**
+*   Zooms out based on snake length: `1.0 - segments × 0.0005`, clamped to `[0.45, 1.0]`.
+*   Uses dt-independent smoothing (rate 2.0).
+
+**To Change:**
+- **Lookahead distance:** Edit the `80 + player.speed * 25` formula in `render()`.
+- **Smoothness vs responsiveness:** Lower the stage rates for smoother but slower transitions; raise them for snappier tracking.
+- **`gameDt`:** The frame delta is stored globally from `gameLoop` and consumed by `render()` for frame-rate independent smoothing.
+
+### 3.3 Screen Scaling (`screenScale`)
+The game uses a **responsive scaling system** to prevent the arena from being cropped on smaller screens. Instead of showing a fixed pixel area (which would crop the view on mobile), the entire canvas transform is multiplied by `screenScale`, so objects appear smaller on smaller screens while maintaining full arena visibility.
+
+**Algorithm:**
+1.  On every resize, the **larger dimension** of the screen (`max(width, height)`) is compared to a `REFERENCE_WIDTH` of 1920px.
+2.  `rawScale = maxDimension / REFERENCE_WIDTH`.
+3.  **Desktop+ (rawScale ≥ 1.0):** `screenScale = rawScale`. No change from the native experience.
+4.  **Mobile (rawScale < 1.0):** `screenScale = (rawScale + 1.0) / 2`. This is the **midpoint** between full scaling (which would make things too small) and no scaling (which would crop the arena). This compromise keeps objects visible while preventing excessive cropping.
+
+**Usage:** `screenScale` is applied alongside `camera.zoom` in the main canvas transform: `ctx.scale(camera.zoom * screenScale, camera.zoom * screenScale)`. It is also factored into all visibility culling calculations (grid, food, minimap viewport indicator) to ensure objects outside the scaled view are not drawn.
+
+**Orientation:** Using `max(width, height)` ensures the scaling factor is the same in portrait and landscape orientations, so rotating the device does not change the apparent size of game objects — only the shape of the visible area changes.
+
+**To Change:**
+- **`REFERENCE_WIDTH` (1920):** The baseline screen width. Increase to zoom out on all screens; decrease to zoom in.
+- **Mobile blend factor:** The `0.5` blend in `(rawScale + 1.0) / 2` can be adjusted. A value closer to `rawScale` zooms out more (more visibility, smaller objects); closer to `1.0` zooms in more (less visibility, larger objects).
 
 ### 3.1 Snake Styles (`SNAKE_STYLES`)
 The game features **25 unique visual styles**, each with distinct rendering logic (`renderBody`, `renderHead`) and behavioral updates (`update`) for particle effects.
@@ -141,6 +191,7 @@ The game features **25 unique visual styles**, each with distinct rendering logi
 | `FOOD_COUNT` | 300 | Amount of food pellets |
 | `BOT_COUNT` | 24 | Number of AI enemies (Total 25 snakes) |
 | `WIDTH_GROWTH_RATE` | 2000 | Score needed to reach max thickness |
+| `REFERENCE_WIDTH` | 1920 | Baseline screen width for responsive scaling |
 
 ## 5. Sound System (`SoundManager`)
 

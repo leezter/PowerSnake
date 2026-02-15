@@ -1794,7 +1794,7 @@ let particles = [];
 let floatingTexts = [];
 let screenShake = 0;
 let player = null;
-let camera = { x: 0, y: 0, zoom: 1, stX: 0, stY: 0 };
+let camera = { x: 0, y: 0, zoom: 1, stX: 0, stY: 0, st2X: 0, st2Y: 0 };
 let gameDt = 1 / 60; // stored each frame for render()
 let lastTime = 0;
 let animationId = null;
@@ -2694,18 +2694,24 @@ function render() {
         const rawTargetX = player.x + dv.x * lookAhead;
         const rawTargetY = player.y + dv.y * lookAhead;
 
-        // --- Dual-stage position smoothing (second-order filter for silky turns) ---
-        // Stage 1: Smooth the target itself (~0.15s time constant)
-        //   Softens the onset of movement on direction change
-        const targetT = 1 - Math.exp(-dt * 6.5);
-        camera.stX = lerp(camera.stX, rawTargetX, targetT);
-        camera.stY = lerp(camera.stY, rawTargetY, targetT);
+        // --- Triple-stage position smoothing (third-order filter ≈ Gaussian response) ---
+        // Three cascaded smoothers produce the smoothest possible transition:
+        // no abrupt acceleration changes at start or end of camera moves.
 
-        // Stage 2: Smooth camera toward the smoothed target (~0.3s time constant)
-        //   Adds soft inertia — camera eases into and out of turns
-        const posT = 1 - Math.exp(-dt * 3.2);
-        camera.x = lerp(camera.x, camera.stX, posT);
-        camera.y = lerp(camera.y, camera.stY, posT);
+        // Stage 1: Fast initial smoothing (~0.12s time constant)
+        const t1 = 1 - Math.exp(-dt * 8.0);
+        camera.stX = lerp(camera.stX, rawTargetX, t1);
+        camera.stY = lerp(camera.stY, rawTargetY, t1);
+
+        // Stage 2: Intermediate smoothing (~0.18s time constant)
+        const t2 = 1 - Math.exp(-dt * 5.5);
+        camera.st2X = lerp(camera.st2X, camera.stX, t2);
+        camera.st2Y = lerp(camera.st2Y, camera.stY, t2);
+
+        // Stage 3: Final camera position (~0.25s time constant)
+        const t3 = 1 - Math.exp(-dt * 4.0);
+        camera.x = lerp(camera.x, camera.st2X, t3);
+        camera.y = lerp(camera.y, camera.st2Y, t3);
 
         // Zoom based on snake size (dt-independent)
         const targetZoom = clamp(1.0 - player.segments.length * 0.0005, 0.45, 1.0);
@@ -3383,6 +3389,8 @@ function startGame(nickname) {
     camera.y = player.y + spawnDv.y * spawnLookAhead;
     camera.stX = camera.x;
     camera.stY = camera.y;
+    camera.st2X = camera.x;
+    camera.st2Y = camera.y;
     camera.zoom = 1.0;
 
     // Create bots with random styles
@@ -4595,6 +4603,8 @@ function respawnPlayer() {
     camera.y = player.y + respawnDv.y * respawnLookAhead;
     camera.stX = camera.x;
     camera.stY = camera.y;
+    camera.st2X = camera.x;
+    camera.st2Y = camera.y;
     camera.zoom = 1.0;
 
     // UI Reset
