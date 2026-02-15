@@ -1794,7 +1794,7 @@ let particles = [];
 let floatingTexts = [];
 let screenShake = 0;
 let player = null;
-let camera = { x: 0, y: 0, zoom: 1 };
+let camera = { x: 0, y: 0, zoom: 1, dirX: 1, dirY: 0 };
 let lastTime = 0;
 let animationId = null;
 let deathTime = 0;
@@ -2683,10 +2683,23 @@ function render() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
 
-    // Camera
+    // Camera — lead ahead of the snake's head with smooth turning
     if (player && player.alive) {
-        camera.x = lerp(camera.x, player.x, CAMERA_LERP);
-        camera.y = lerp(camera.y, player.y, CAMERA_LERP);
+        const dv = DIR_VECTORS[player.dir];
+        // Smoothly interpolate camera direction for buttery turn transitions
+        const dirLerp = 0.03;
+        camera.dirX = lerp(camera.dirX, dv.x, dirLerp);
+        camera.dirY = lerp(camera.dirY, dv.y, dirLerp);
+        // Normalize the smoothed direction so diagonal transitions don't shrink
+        const dirLen = Math.sqrt(camera.dirX * camera.dirX + camera.dirY * camera.dirY) || 1;
+        const ndx = camera.dirX / dirLen;
+        const ndy = camera.dirY / dirLen;
+
+        const lookAhead = 80 + player.speed * 25;
+        const targetX = player.x + ndx * lookAhead;
+        const targetY = player.y + ndy * lookAhead;
+        camera.x = lerp(camera.x, targetX, 0.045);
+        camera.y = lerp(camera.y, targetY, 0.045);
 
         // Zoom based on snake size
         const targetZoom = clamp(1.0 - player.segments.length * 0.0005, 0.45, 1.0);
