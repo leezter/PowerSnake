@@ -3,15 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PowerSnake — Neon Arena</title>
     <meta name="description"
         content="PowerSnake is a fast-paced neon snake arena game. Grow your powerline, boost off rivals, and become the king!">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap"
-        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -21,6 +16,9 @@
         <div class="overlay-content">
             <h1 class="game-title">POWER<span class="accent">SNAKE</span></h1>
             <p class="tagline">Dominate the neon arena</p>
+            <p id="highScoreDisplay"
+                style="color: var(--neon-yellow); margin-bottom: 20px; font-family: var(--font-display); letter-spacing: 2px;">
+                HIGH SCORE: <span id="highScoreValue">0</span></p>
             <div class="input-group">
                 <input type="text" id="nicknameInput" maxlength="15" placeholder="Enter nickname..." autocomplete="off"
                     spellcheck="false">
@@ -28,6 +26,15 @@
             <div class="button-group">
                 <button id="playButton" class="neon-button primary-btn">PLAY</button>
                 <button id="selectSnakeButton" class="neon-button secondary-btn">SELECT SNAKE</button>
+            </div>
+
+            <!-- Quality Toggle for Low-end Devices -->
+            <div style="margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <input type="checkbox" id="lowQualityToggle"
+                    style="accent-color:var(--neon-cyan); width: 18px; height: 18px;">
+                <label for="lowQualityToggle"
+                    style="color: rgba(255,255,255,0.7); font-size: 0.9rem; letter-spacing: 1px; cursor: pointer;">LOW
+                    QUALITY MODE (FASTER)</label>
             </div>
             <div class="controls-hint">
                 <p><span class="key">W A S D</span> or <span class="key">↑ ← ↓ →</span> to move</p>

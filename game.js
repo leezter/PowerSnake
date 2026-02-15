@@ -1,5 +1,5 @@
-/* ============================================
-   PowerSnake — Complete Game Engine
+﻿/* ============================================
+   PowerSnake â€” Complete Game Engine
    ============================================ */
 
 // ---- Constants ----
@@ -28,7 +28,7 @@ const SNAKE_STYLES = [
         name: 'CYBER',
         colors: { primary: '#00f0ff', secondary: '#ff00e5', glow: '#00f0ff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 20 + snake.boostIntensity * 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20 + snake.boostIntensity * 20;
             ctx.shadowColor = snake.style.colors.glow;
             ctx.strokeStyle = snake.style.colors.primary;
             ctx.lineWidth = snake.width;
@@ -40,7 +40,7 @@ const SNAKE_STYLES = [
                 for (let i = 1; i < snake.segments.length; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
             }
             ctx.stroke();
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur = lowQuality ? 0 : 0;
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = snake.width * 0.3;
             ctx.stroke();
@@ -48,7 +48,7 @@ const SNAKE_STYLES = [
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#fff';
             ctx.shadowColor = snake.style.colors.glow;
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
             ctx.fill();
@@ -62,7 +62,7 @@ const SNAKE_STYLES = [
         name: 'INFERNO',
         colors: { primary: '#ff3300', secondary: '#ffaa00', glow: '#ff3300' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 30;
+            ctx.shadowBlur = lowQuality ? 0 : 30;
             ctx.shadowColor = '#ff5500';
             ctx.strokeStyle = '#ff3300';
             ctx.lineWidth = snake.width;
@@ -84,7 +84,7 @@ const SNAKE_STYLES = [
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ffaa00';
             ctx.shadowColor = '#ff0000';
-            ctx.shadowBlur = 40;
+            ctx.shadowBlur = lowQuality ? 0 : 40;
             ctx.beginPath();
             ctx.moveTo(size * 1.2, 0);
             ctx.lineTo(-size * 0.8, size);
@@ -101,7 +101,7 @@ const SNAKE_STYLES = [
         name: 'VOID',
         colors: { primary: '#a855f7', secondary: '#1a0b2e', glow: '#a855f7' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#a855f7';
             ctx.strokeStyle = 'rgba(20, 0, 40, 0.9)';
             ctx.lineWidth = snake.width * 1.4;
@@ -120,7 +120,7 @@ const SNAKE_STYLES = [
             ctx.strokeStyle = '#a855f7';
             ctx.lineWidth = 3;
             ctx.shadowColor = '#a855f7';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
             ctx.fill();
@@ -137,7 +137,7 @@ const SNAKE_STYLES = [
         name: 'GLITCH',
         colors: { primary: '#00ff00', secondary: '#ffffff', glow: '#00ff00' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.shadowColor = '#00ff00';
             for (let i = 0; i < snake.segments.length; i += 2) {
                 const s = snake.segments[i];
@@ -149,7 +149,7 @@ const SNAKE_STYLES = [
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#00ff00';
             ctx.shadowColor = '#00ff00';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             const shiftX = (Math.random() - 0.5) * 6;
             ctx.fillRect(-size + shiftX, -size, size * 2, size * 2);
             ctx.fillStyle = '#000';
@@ -166,7 +166,7 @@ const SNAKE_STYLES = [
             const time = performance.now() / 150;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.shadowColor = '#ff00e5';
             ctx.beginPath();
             if (snake.segments.length > 0) {
@@ -182,7 +182,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ff00e5';
-            ctx.shadowBlur = 35;
+            ctx.shadowBlur = lowQuality ? 0 : 35;
             ctx.shadowColor = '#ff00e5';
             ctx.beginPath();
             ctx.arc(0, 0, size * 1.1, 0, Math.PI * 2);
@@ -199,7 +199,7 @@ const SNAKE_STYLES = [
         name: 'MIDAS',
         colors: { primary: '#ffd700', secondary: '#ffffff', glow: '#ffa500' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#ffa500';
             ctx.strokeStyle = '#ffd700';
             ctx.lineWidth = snake.width;
@@ -217,7 +217,7 @@ const SNAKE_STYLES = [
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ffd700';
             ctx.shadowColor = '#ffa500';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.beginPath();
             ctx.moveTo(size * 1.3, 0);
             ctx.lineTo(0, size);
@@ -232,7 +232,7 @@ const SNAKE_STYLES = [
         name: 'TOXIN',
         colors: { primary: '#ccff00', secondary: '#00ff00', glow: '#ccff00' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#ccff00';
             ctx.strokeStyle = '#ccff00';
             ctx.lineWidth = snake.width;
@@ -249,7 +249,7 @@ const SNAKE_STYLES = [
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ccff00';
             ctx.shadowColor = '#ccff00';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
             ctx.fill();
@@ -266,7 +266,7 @@ const SNAKE_STYLES = [
         name: 'PRISM',
         colors: { primary: '#ffffff', secondary: '#00ffff', glow: '#ffffff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#ffffff';
             for (let i = 0; i < snake.segments.length; i += 2) {
                 const s = snake.segments[i];
@@ -284,7 +284,7 @@ const SNAKE_STYLES = [
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#fff';
             ctx.shadowColor = '#fff';
-            ctx.shadowBlur = 30;
+            ctx.shadowBlur = lowQuality ? 0 : 30;
             ctx.beginPath();
             ctx.moveTo(size, 0);
             ctx.lineTo(-size * 0.5, size * 0.8);
@@ -298,7 +298,7 @@ const SNAKE_STYLES = [
         name: 'GHOST',
         colors: { primary: '#666666', secondary: '#333333', glow: '#ffffff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = 'rgba(255,255,255,0.3)';
             ctx.strokeStyle = 'rgba(255,255,255,0.2)';
             ctx.lineWidth = snake.width;
@@ -320,7 +320,7 @@ const SNAKE_STYLES = [
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = 'rgba(255,255,255,0.8)';
             ctx.shadowColor = '#fff';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
             ctx.fill();
@@ -338,7 +338,7 @@ const SNAKE_STYLES = [
         name: 'CIRCUIT',
         colors: { primary: '#00ccff', secondary: '#000033', glow: '#00ccff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#00ccff';
             ctx.strokeStyle = '#00ccff';
             ctx.lineWidth = 2;
@@ -349,7 +349,7 @@ const SNAKE_STYLES = [
             }
             ctx.stroke();
             ctx.fillStyle = '#003366';
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur = lowQuality ? 0 : 0;
             for (let i = 0; i < snake.segments.length; i += 3) {
                 const s = snake.segments[i];
                 ctx.fillRect(s.x - snake.width / 2, s.y - snake.width / 2, snake.width, snake.width);
@@ -358,7 +358,7 @@ const SNAKE_STYLES = [
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#00ccff';
             ctx.shadowColor = '#00ccff';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.fillRect(-size, -size, size * 2, size * 2);
             ctx.fillStyle = '#ff0000';
             ctx.beginPath();
@@ -373,7 +373,7 @@ const SNAKE_STYLES = [
         name: 'RADIUM',
         colors: { primary: '#ccff00', secondary: '#000000', glow: '#66ff00' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.shadowColor = '#66ff00';
             ctx.strokeStyle = '#33ff00';
             ctx.lineWidth = snake.width;
@@ -400,7 +400,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ccff00';
-            ctx.shadowBlur = 30;
+            ctx.shadowBlur = lowQuality ? 0 : 30;
             ctx.shadowColor = '#66ff00';
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -428,7 +428,7 @@ const SNAKE_STYLES = [
         name: 'COSMOS',
         colors: { primary: '#001133', secondary: '#ffffff', glow: '#0044ff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#0044ff';
             ctx.lineWidth = snake.width * 1.5;
             ctx.lineCap = 'round';
@@ -459,7 +459,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#000022';
-            ctx.shadowBlur = 30;
+            ctx.shadowBlur = lowQuality ? 0 : 30;
             ctx.shadowColor = '#0044ff';
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -487,7 +487,7 @@ const SNAKE_STYLES = [
         name: 'VAMPIRE',
         colors: { primary: '#880000', secondary: '#000000', glow: '#ff0000' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#ff0000';
             ctx.fillStyle = '#550000';
             const w = snake.width;
@@ -516,7 +516,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#000';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.shadowColor = '#ff0000';
             ctx.beginPath();
             ctx.moveTo(size, 0);
@@ -541,7 +541,7 @@ const SNAKE_STYLES = [
         name: 'PIXEL',
         colors: { primary: '#00ff00', secondary: '#000000', glow: '#00ff00' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 0; // No blur for crisp pixels
+            ctx.shadowBlur = lowQuality ? 0 : 0; // No blur for crisp pixels
             ctx.fillStyle = '#00ff00';
             const w = snake.width;
             const blockSize = w * 1.2;
@@ -551,7 +551,7 @@ const SNAKE_STYLES = [
             }
         },
         renderHead: (ctx, snake, size) => {
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur = lowQuality ? 0 : 0;
             ctx.fillStyle = '#00ff00';
             const s = size * 1.5;
             ctx.fillRect(-s / 2, -s / 2, s, s);
@@ -568,7 +568,7 @@ const SNAKE_STYLES = [
         name: 'CANDY',
         colors: { primary: '#ff66aa', secondary: '#00ccff', glow: '#ffffff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#fff';
             ctx.lineCap = 'round';
             ctx.lineWidth = snake.width;
@@ -586,7 +586,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ff66aa';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#fff';
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -605,7 +605,7 @@ const SNAKE_STYLES = [
         name: 'MAGMA',
         colors: { primary: '#ff4400', secondary: '#331100', glow: '#ff2200' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#ff2200';
             ctx.lineWidth = snake.width * 1.2;
             ctx.lineCap = 'round';
@@ -626,7 +626,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#441100';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.shadowColor = '#ff4400';
             ctx.beginPath();
             ctx.moveTo(size, 0);
@@ -650,7 +650,7 @@ const SNAKE_STYLES = [
         name: 'FROST',
         colors: { primary: '#00ffff', secondary: '#ffffff', glow: '#0088ff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#00ffff';
             ctx.fillStyle = 'rgba(200, 255, 255, 0.4)';
 
@@ -675,7 +675,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.shadowColor = '#00ffff';
             ctx.beginPath();
             ctx.moveTo(size * 1.5, 0);
@@ -693,7 +693,7 @@ const SNAKE_STYLES = [
         name: 'VOLTAIC',
         colors: { primary: '#ffff00', secondary: '#ffffff', glow: '#ffffaa' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#ffff00';
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 2;
@@ -710,7 +710,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ffff00';
-            ctx.shadowBlur = 30;
+            ctx.shadowBlur = lowQuality ? 0 : 30;
             ctx.shadowColor = '#fff';
             ctx.beginPath();
             ctx.moveTo(size, 0);
@@ -729,7 +729,7 @@ const SNAKE_STYLES = [
         name: 'AZURE',
         colors: { primary: '#0066ff', secondary: '#00aaff', glow: '#0022ff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#00aaff';
             ctx.fillStyle = '#0066ff';
             // Flowing river
@@ -745,7 +745,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#00aaff';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#0066ff';
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -762,7 +762,7 @@ const SNAKE_STYLES = [
         name: 'VERDANT',
         colors: { primary: '#22aa22', secondary: '#55ff55', glow: '#00ff00' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#22aa22';
             ctx.strokeStyle = '#006600';
             ctx.lineWidth = snake.width;
@@ -786,7 +786,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#22aa22';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#22aa22';
             ctx.beginPath();
             ctx.moveTo(size * 1.2, 0);
@@ -800,7 +800,7 @@ const SNAKE_STYLES = [
         name: 'CHROME',
         colors: { primary: '#cccccc', secondary: '#ffffff', glow: '#888888' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#ffffff';
 
             // Gradient metallic look
@@ -825,7 +825,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#e0e0e0';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#fff';
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -838,7 +838,7 @@ const SNAKE_STYLES = [
         name: 'SKETCH',
         colors: { primary: '#ffffff', secondary: '#000000', glow: '#ffffff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 5;
+            ctx.shadowBlur = lowQuality ? 0 : 5;
             ctx.shadowColor = '#fff';
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 2;
@@ -868,7 +868,7 @@ const SNAKE_STYLES = [
         renderHead: (ctx, snake, size) => {
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 3;
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
             ctx.stroke();
@@ -885,7 +885,7 @@ const SNAKE_STYLES = [
         name: 'SPECTRUM',
         colors: { primary: '#ff0000', secondary: '#00ff00', glow: '#ffffff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             const time = performance.now() / 10;
             const len = snake.segments.length;
 
@@ -902,7 +902,7 @@ const SNAKE_STYLES = [
         renderHead: (ctx, snake, size) => {
             const hue = (performance.now() / 10) % 360;
             ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -915,7 +915,7 @@ const SNAKE_STYLES = [
         name: 'MATRIX',
         colors: { primary: '#00ff33', secondary: '#003300', glow: '#00ff33' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.shadowColor = '#00ff33';
             ctx.fillStyle = '#00ff33';
             ctx.font = `${Math.floor(snake.width * 1.5)}px monospace`;
@@ -931,7 +931,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.strokeStyle = '#00ff33';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.lineWidth = 2;
             ctx.strokeRect(-size * 0.8, -size * 0.8, size * 1.6, size * 1.6);
             ctx.fillStyle = '#00ff33';
@@ -944,7 +944,7 @@ const SNAKE_STYLES = [
         name: 'SAMURAI',
         colors: { primary: '#aa0000', secondary: '#ddaa00', glow: '#aa0000' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#aa0000';
 
             // Armor plates
@@ -972,7 +972,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#aa0000';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
             ctx.fill();
@@ -993,7 +993,7 @@ const SNAKE_STYLES = [
         name: 'VAPOR',
         colors: { primary: '#ff71ce', secondary: '#01cdfe', glow: '#ff71ce' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#ff71ce';
             ctx.strokeStyle = '#ff71ce';
             ctx.lineWidth = snake.width;
@@ -1018,7 +1018,7 @@ const SNAKE_STYLES = [
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ff71ce';
             ctx.shadowColor = '#01cdfe';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
             ctx.fill();
@@ -1038,7 +1038,7 @@ const SNAKE_STYLES = [
         name: 'GUMMY',
         colors: { primary: '#ff4444', secondary: '#ff8888', glow: '#ffaaaa' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.shadowColor = 'rgba(255, 100, 100, 0.5)';
             ctx.fillStyle = 'rgba(255, 50, 50, 0.6)';
 
@@ -1053,7 +1053,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = 'rgba(255, 30, 30, 0.8)';
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#ffaaaa';
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -1071,7 +1071,7 @@ const SNAKE_STYLES = [
         name: 'HIVE',
         colors: { primary: '#ffcc00', secondary: '#aa7700', glow: '#ffdd00' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.shadowColor = '#ffcc00';
             ctx.strokeStyle = '#aa7700';
             ctx.fillStyle = '#ffcc00';
@@ -1095,7 +1095,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ffaa00';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#ffcc00';
             ctx.beginPath();
             for (let k = 0; k < 6; k++) {
@@ -1117,7 +1117,7 @@ const SNAKE_STYLES = [
         name: 'OBSIDIAN',
         colors: { primary: '#111111', secondary: '#440044', glow: '#660066' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#660066';
             ctx.fillStyle = '#050505';
 
@@ -1141,7 +1141,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#000';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.shadowColor = '#aa00aa';
             ctx.beginPath();
             ctx.moveTo(size * 1.3, 0);
@@ -1162,7 +1162,7 @@ const SNAKE_STYLES = [
         name: 'CARBON',
         colors: { primary: '#333333', secondary: '#111111', glow: '#555555' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.shadowColor = '#555';
             ctx.strokeStyle = '#222';
             ctx.lineWidth = snake.width * 2;
@@ -1184,7 +1184,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#222';
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#777';
             ctx.fillRect(-size, -size, size * 2, size * 2);
             ctx.strokeStyle = '#444';
@@ -1197,7 +1197,7 @@ const SNAKE_STYLES = [
         name: 'RUNE',
         colors: { primary: '#444444', secondary: '#00ffcc', glow: '#00ffcc' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#00ffcc';
             ctx.fillStyle = '#333';
 
@@ -1226,7 +1226,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#222';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.shadowColor = '#00ffcc';
             ctx.beginPath();
             ctx.moveTo(size * 1.2, 0);
@@ -1250,7 +1250,7 @@ const SNAKE_STYLES = [
         renderBody: (ctx, snake) => {
             // Core
             ctx.lineCap = 'round';
-            ctx.shadowBlur = 30;
+            ctx.shadowBlur = lowQuality ? 0 : 30;
             ctx.shadowColor = '#ff0055';
             ctx.strokeStyle = '#ff0055';
             ctx.lineWidth = snake.width * 2; // Wide glow
@@ -1263,12 +1263,12 @@ const SNAKE_STYLES = [
             // White hot center
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = snake.width * 0.5;
-            ctx.shadowBlur = 10; // Less blur for core
+            ctx.shadowBlur = lowQuality ? 0 : 10; // Less blur for core
             ctx.stroke();
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 40;
+            ctx.shadowBlur = lowQuality ? 0 : 40;
             ctx.shadowColor = '#ff0055';
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -1281,7 +1281,7 @@ const SNAKE_STYLES = [
         name: 'OIL',
         colors: { primary: '#000000', secondary: '#555555', glow: '#880088' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.shadowColor = 'rgba(100, 100, 100, 0.5)';
             const len = snake.segments.length;
             const time = performance.now() / 500;
@@ -1303,7 +1303,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#000';
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#fff';
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -1322,7 +1322,7 @@ const SNAKE_STYLES = [
         name: 'BONE',
         colors: { primary: '#eeeeee', secondary: '#aaaaaa', glow: '#ffffff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.shadowColor = '#ffffff';
             ctx.fillStyle = '#f0f0f0';
 
@@ -1344,7 +1344,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#f5f5f5';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#fff';
             // Skull shape (simplified)
             ctx.beginPath();
@@ -1363,7 +1363,7 @@ const SNAKE_STYLES = [
         name: 'HAZARD',
         colors: { primary: '#ffdd00', secondary: '#000000', glow: '#ffdd00' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#ffdd00';
             ctx.lineWidth = snake.width;
             ctx.lineCap = 'square';
@@ -1381,7 +1381,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ffdd00';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#ffdd00';
             ctx.beginPath();
             ctx.moveTo(size * 1.2, 0);
@@ -1401,7 +1401,7 @@ const SNAKE_STYLES = [
         name: 'ZEN',
         colors: { primary: '#000000', secondary: '#ffffff', glow: '#ffffff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 5;
+            ctx.shadowBlur = lowQuality ? 0 : 5;
             ctx.shadowColor = '#fff';
             ctx.fillStyle = '#000';
 
@@ -1418,7 +1418,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#000';
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#fff';
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -1435,7 +1435,7 @@ const SNAKE_STYLES = [
         name: 'DISCO',
         colors: { primary: '#ffffff', secondary: '#888888', glow: '#ffffff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#fff';
 
             const len = snake.segments.length;
@@ -1453,7 +1453,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ddd'; // Mirror ball
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.shadowColor = '#fff';
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -1476,7 +1476,7 @@ const SNAKE_STYLES = [
         name: 'AMETHYST',
         colors: { primary: '#9966cc', secondary: '#ccccff', glow: '#aa00ff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#aa00ff';
             ctx.fillStyle = 'rgba(153, 102, 204, 0.8)';
 
@@ -1499,7 +1499,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#9966cc';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.shadowColor = '#aa00ff';
             ctx.beginPath();
             ctx.moveTo(0, -size * 1.2);
@@ -1515,7 +1515,7 @@ const SNAKE_STYLES = [
         name: 'BAMBOO',
         colors: { primary: '#55aa55', secondary: '#338833', glow: '#55aa55' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.shadowColor = '#55aa55';
             ctx.lineWidth = snake.width * 1.5;
             ctx.strokeStyle = '#55aa55';
@@ -1538,7 +1538,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#66cc66';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#55aa55';
             ctx.beginPath();
             ctx.moveTo(size, 0);
@@ -1553,7 +1553,7 @@ const SNAKE_STYLES = [
         name: 'CHEESE',
         colors: { primary: '#ffcc00', secondary: '#ffaa00', glow: '#ffcc00' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.shadowColor = '#ffcc00';
             ctx.lineWidth = snake.width * 1.5;
             ctx.strokeStyle = '#ffcc00';
@@ -1575,7 +1575,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ffcc00';
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = lowQuality ? 0 : 20;
             ctx.shadowColor = '#ffcc00';
             ctx.beginPath();
             ctx.moveTo(size * 1.5, 0);
@@ -1590,7 +1590,7 @@ const SNAKE_STYLES = [
         name: 'TIEDYE',
         colors: { primary: '#ff00ff', secondary: '#00ffff', glow: '#ffffff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#fff';
 
             const len = snake.segments.length;
@@ -1607,7 +1607,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.shadowColor = '#fff';
             ctx.beginPath();
             ctx.arc(0, 0, size, 0, Math.PI * 2);
@@ -1629,7 +1629,7 @@ const SNAKE_STYLES = [
         name: 'STONE',
         colors: { primary: '#888888', secondary: '#555555', glow: '#aaaaaa' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 5;
+            ctx.shadowBlur = lowQuality ? 0 : 5;
             ctx.shadowColor = '#aaa';
             ctx.lineWidth = snake.width * 1.2;
             ctx.strokeStyle = '#777';
@@ -1648,7 +1648,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#888';
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.shadowColor = '#aaa';
             ctx.fillRect(-size, -size, size * 2, size * 2);
         },
@@ -1659,7 +1659,7 @@ const SNAKE_STYLES = [
         name: 'PAPER',
         colors: { primary: '#ffffff', secondary: '#e0e0e0', glow: '#ffffff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 5;
+            ctx.shadowBlur = lowQuality ? 0 : 5;
             ctx.shadowColor = '#000'; // Shadow for paper lift effect
             ctx.shadowOffsetY = 5;
 
@@ -1680,7 +1680,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
             ctx.shadowColor = '#000';
             ctx.beginPath();
             ctx.moveTo(size * 1.5, 0);
@@ -1696,7 +1696,7 @@ const SNAKE_STYLES = [
         name: 'JELLY',
         colors: { primary: '#00ffff', secondary: '#ffffff', glow: '#00ffff' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = lowQuality ? 0 : 15;
             ctx.shadowColor = '#00ffff';
             ctx.fillStyle = 'rgba(0, 255, 255, 0.4)';
 
@@ -1713,7 +1713,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
-            ctx.shadowBlur = 25;
+            ctx.shadowBlur = lowQuality ? 0 : 25;
             ctx.shadowColor = '#00ffff';
             ctx.beginPath();
             ctx.arc(0, 0, size * 1.2, 0, Math.PI, true); // Semi circle top
@@ -1730,7 +1730,7 @@ const SNAKE_STYLES = [
         name: 'RETRO',
         colors: { primary: '#ffff00', secondary: '#000000', glow: '#ffff00' },
         renderBody: (ctx, snake) => {
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur = lowQuality ? 0 : 0;
             ctx.fillStyle = '#ffff00';
 
             const len = snake.segments.length;
@@ -1741,7 +1741,7 @@ const SNAKE_STYLES = [
         },
         renderHead: (ctx, snake, size) => {
             ctx.fillStyle = '#ffff00';
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur = lowQuality ? 0 : 0;
             ctx.beginPath();
             // Pac shape
             const mouth = Math.abs(Math.sin(performance.now() / 100)) * 0.5;
@@ -1785,9 +1785,12 @@ const selectSnakeButton = document.getElementById('selectSnakeButton');
 const snakeSelectionScreen = document.getElementById('snakeSelectionScreen');
 const snakeGrid = document.getElementById('snakeGrid');
 const backButton = document.getElementById('backButton');
+const highScoreValue = document.getElementById('highScoreValue');
 
 // ---- Game State ----
 let gameRunning = false;
+let lowQuality = false;
+let highScore = 0;
 let snakes = [];
 let foods = [];
 let particles = [];
@@ -1908,7 +1911,7 @@ class Snake {
     get headY() { return this.y; }
 
     turnTo(newDir) {
-        // Prevent 180° reversal
+        // Prevent 180Â° reversal
         if ((newDir + 2) % 4 !== this.dir) {
             this.nextDir = newDir;
         }
@@ -2684,7 +2687,7 @@ function render() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
 
-    // Camera — lead ahead with dual-stage position smoothing
+    // Camera â€” lead ahead with dual-stage position smoothing
     if (player && player.alive) {
         const dt = gameDt;
         const dv = DIR_VECTORS[player.dir];
@@ -2694,7 +2697,7 @@ function render() {
         const rawTargetX = player.x + dv.x * lookAhead;
         const rawTargetY = player.y + dv.y * lookAhead;
 
-        // --- Triple-stage position smoothing (third-order filter ≈ Gaussian response) ---
+        // --- Triple-stage position smoothing (third-order filter â‰ˆ Gaussian response) ---
         // Three cascaded smoothers produce the smoothest possible transition:
         // no abrupt acceleration changes at start or end of camera moves.
 
@@ -2812,7 +2815,7 @@ function drawArenaBorder() {
     ctx.strokeStyle = '#ff3355';
     ctx.lineWidth = 6;
     ctx.shadowColor = '#ff3355';
-    ctx.shadowBlur = 40;
+    ctx.shadowBlur = lowQuality ? 0 : 40;
 
     // Draw animated border glow
     const time = performance.now() / 500;
@@ -2822,7 +2825,7 @@ function drawArenaBorder() {
     ctx.strokeRect(0, 0, ARENA_SIZE, ARENA_SIZE);
     ctx.globalAlpha = 1;
 
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur = lowQuality ? 0 : 0;
 }
 
 function drawFood() {
@@ -2848,7 +2851,7 @@ function drawFood() {
         ctx.strokeStyle = f.color;
         ctx.lineWidth = 1.5;
         ctx.shadowColor = f.color;
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = lowQuality ? 0 : 10;
         ctx.globalAlpha = 0.6 + pulse * 0.2;
         ctx.stroke();
 
@@ -2856,7 +2859,7 @@ function drawFood() {
         ctx.beginPath();
         ctx.arc(f.x, f.y, size, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = lowQuality ? 0 : 15;
         ctx.globalAlpha = 1;
         ctx.fill();
 
@@ -2864,10 +2867,10 @@ function drawFood() {
         ctx.beginPath();
         ctx.arc(f.x, f.y, size * 0.7, 0, Math.PI * 2);
         ctx.fillStyle = f.color;
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur = lowQuality ? 0 : 0;
         ctx.fill();
     }
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur = lowQuality ? 0 : 0;
 }
 
 function drawSnakes() {
@@ -2921,7 +2924,7 @@ function drawCrown(x, y) {
     ctx.translate(x, y + bounce);
     ctx.fillStyle = '#ffe600';
     ctx.shadowColor = '#ffe600';
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = lowQuality ? 0 : 15;
 
     ctx.beginPath();
     ctx.moveTo(-10, 5);
@@ -2946,13 +2949,13 @@ function drawNameTag(snake) {
     ctx.textBaseline = 'bottom';
 
     ctx.shadowColor = '#000';
-    ctx.shadowBlur = 3;
+    ctx.shadowBlur = lowQuality ? 0 : 3;
     ctx.lineWidth = 3;
     ctx.strokeText(snake.name, snake.x, snake.y - snake.width - 16);
 
     ctx.fillStyle = '#fff';
     ctx.fillText(snake.name, snake.x, snake.y - snake.width - 16);
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur = lowQuality ? 0 : 0;
 }
 
 function drawBoostEffect(snake) {
@@ -2961,7 +2964,7 @@ function drawBoostEffect(snake) {
 
     ctx.strokeStyle = '#ffe600';
     ctx.lineWidth = 2;
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = lowQuality ? 0 : 10;
     ctx.shadowColor = '#ffe600';
 
     ctx.beginPath();
@@ -2986,7 +2989,7 @@ function drawBoostEffect(snake) {
         ctx.lineTo(midX + offX, midY + offY);
     }
     ctx.stroke();
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur = lowQuality ? 0 : 0;
 }
 
 function drawAllBoostLightnings() {
@@ -3009,7 +3012,7 @@ function drawLightning(x1, y1, x2, y2, color) {
     const steps = Math.max(2, Math.floor(d / 20));
 
     // Glowy path
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = lowQuality ? 0 : 20;
     ctx.shadowColor = color;
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 3;
@@ -3038,7 +3041,7 @@ function drawLightning(x1, y1, x2, y2, color) {
     ctx.lineTo(x2, y2);
     ctx.stroke();
 
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur = lowQuality ? 0 : 0;
 }
 
 function drawParticles() {
@@ -3059,7 +3062,7 @@ function drawParticles() {
             ctx.rotate(p.angle);
             ctx.fillStyle = p.color;
             ctx.shadowColor = p.color;
-            ctx.shadowBlur = 8;
+            ctx.shadowBlur = lowQuality ? 0 : 8;
             const s = p.size * p.alpha;
             ctx.fillRect(-s / 2, -s / 2, s, s);
             ctx.restore();
@@ -3071,7 +3074,7 @@ function drawParticles() {
             const s = p.size * p.alpha;
             ctx.fillStyle = '#ffffff';
             ctx.shadowColor = p.color;
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = lowQuality ? 0 : 10;
 
             // Draw simple diamond/star
             ctx.beginPath();
@@ -3092,13 +3095,13 @@ function drawParticles() {
             ctx.arc(p.x, p.y, p.size * p.alpha, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
             ctx.shadowColor = p.color;
-            ctx.shadowBlur = 6;
+            ctx.shadowBlur = lowQuality ? 0 : 6;
             ctx.fill();
         }
 
     }
     ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur = lowQuality ? 0 : 0;
 }
 
 function drawFloatingTexts() {
@@ -3180,7 +3183,7 @@ function updateLeaderboard() {
         if (isPlayerEntry) classes += ' is-player';
         if (isKing) classes += ' is-king';
 
-        const crown = isKing ? '<span class="lb-crown">👑</span>' : '';
+        const crown = isKing ? '<span class="lb-crown">ðŸ‘‘</span>' : '';
         html += `
             <div class="${classes}" style="color: ${isPlayerEntry ? s.color : ''}">
                 <span class="lb-rank">${i + 1}</span>
@@ -3372,6 +3375,7 @@ window.addEventListener('touchcancel', handleTouchEnd);
 
 // ---- Game Flow ----
 function startGame(nickname) {
+    if (nickname) localStorage.setItem('ps_nickname', nickname);
     snakes = [];
     foods = [];
     particles = [];
@@ -3452,6 +3456,11 @@ function startGame(nickname) {
 
 function onPlayerDeath() {
     deathTime = performance.now();
+    if (player && player.score > highScore) {
+        highScore = player.score;
+        localStorage.setItem('ps_highscore', highScore);
+        if (highScoreValue) highScoreValue.textContent = highScore;
+    }
 
     // Calculate rank
     const allSorted = [...snakes].sort((a, b) => b.score - a.score);
@@ -4629,8 +4638,56 @@ nicknameInput.addEventListener('keydown', (e) => {
 });
 
 // Focus nickname input on load
+// Focus nickname input on load
+const lowQualityToggle = document.getElementById('lowQualityToggle');
+
 window.addEventListener('load', () => {
+    loadSettings();
     nicknameInput.focus();
+});
+
+function loadSettings() {
+    try {
+        const savedName = localStorage.getItem('ps_nickname');
+        if (savedName) nicknameInput.value = savedName;
+
+        const savedScore = localStorage.getItem('ps_highscore');
+        if (savedScore) {
+            highScore = parseInt(savedScore, 10);
+            if (highScoreValue) highScoreValue.textContent = highScore;
+        }
+
+        const savedStyle = localStorage.getItem('ps_style');
+        if (savedStyle) playerSnakeStyleIndex = parseInt(savedStyle, 10);
+
+        const savedQuality = localStorage.getItem('ps_quality');
+        if (savedQuality === 'true') {
+            lowQuality = true;
+            if (lowQualityToggle) lowQualityToggle.checked = true;
+        }
+    } catch (e) {
+        console.warn('LocalStorage error:', e);
+    }
+}
+
+if (lowQualityToggle) {
+    lowQualityToggle.addEventListener('change', (e) => {
+        lowQuality = e.target.checked;
+        localStorage.setItem('ps_quality', lowQuality);
+    });
+}
+
+// Handle visibility change to pause audio/logic
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        if (soundManager.ctx && soundManager.ctx.state === 'running') {
+            soundManager.ctx.suspend();
+        }
+    } else {
+        if (soundManager.ctx && soundManager.ctx.state === 'suspended') {
+            soundManager.ctx.resume();
+        }
+    }
 });
 
 // ---- Snake Selection UI ----
@@ -4668,6 +4725,7 @@ function selectSnake(index) {
     if (index < 0 || index >= SNAKE_STYLES.length) return;
 
     playerSnakeStyleIndex = index;
+    localStorage.setItem('ps_style', index);
 
     // Update UI
     const cards = snakeGrid.children;
@@ -4774,4 +4832,5 @@ backButton.addEventListener('click', () => {
         startScreen.classList.remove('hidden');
     }
 });
+
 
