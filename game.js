@@ -2938,7 +2938,7 @@ function drawCrown(x, y) {
 }
 
 function drawNameTag(snake) {
-    if (snake.isPlayer) return; // Hide own name to reduce clutter or use UI
+    // snake.isPlayer check removed to show player name
 
     const fontSize = clamp(12 / camera.zoom, 10, 18);
     ctx.font = `600 ${fontSize}px Rajdhani, sans-serif`;
