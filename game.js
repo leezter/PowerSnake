@@ -12,7 +12,7 @@ const BOOST_RAMP_DURATION = 6.0; // seconds to reach full boost speed
 const MAGNET_DISTANCE = 75;
 const MAGNET_FORCE = 600; // pixels per second
 const FOOD_COUNT = 300;
-const BOT_COUNT = 44; // Total 45 snakes (1 Player + 44 Bots)
+const BOT_COUNT = 25;
 const SEGMENT_SPACING = 6;
 const MIN_SNAKE_WIDTH = 4;
 const MAX_SNAKE_WIDTH = 14;
@@ -1811,7 +1811,10 @@ function resizeCanvas() {
     // Scale based on the larger dimension to maintain consistent visual size
     // regardless of orientation (landscape vs portrait).
     const maxDim = Math.max(canvas.width, canvas.height);
-    screenScale = maxDim / REFERENCE_WIDTH;
+    const rawScale = maxDim / REFERENCE_WIDTH;
+    // For smaller screens (mobile), use halfway between raw scale and 1.0
+    // to keep things visible without full cropping. Desktop+ stays unchanged.
+    screenScale = rawScale < 1.0 ? (rawScale + 1.0) / 2 : rawScale;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -3359,9 +3362,27 @@ function startGame(nickname) {
     camera.y = player.y;
     camera.zoom = 1.0;
 
-    // Create bots with remaining styles (1-9)
-    for (let i = 1; i < SNAKE_STYLES.length; i++) {
-        const style = SNAKE_STYLES[i];
+    // Create bots with random styles
+    // Collect available style indices (exclude player's style)
+    const availableIndices = [];
+    for (let i = 0; i < SNAKE_STYLES.length; i++) {
+        if (i !== playerSnakeStyleIndex) {
+            availableIndices.push(i);
+        }
+    }
+
+    // Shuffle indices
+    for (let i = availableIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [availableIndices[i], availableIndices[j]] = [availableIndices[j], availableIndices[i]];
+    }
+
+    // Determine how many bots to create (capped by available styles)
+    const botsToCreate = Math.min(BOT_COUNT, availableIndices.length);
+
+    for (let i = 0; i < botsToCreate; i++) {
+        const index = availableIndices[i];
+        const style = SNAKE_STYLES[index];
         const name = style.name;
 
         const bot = new Snake(name, style, false);
