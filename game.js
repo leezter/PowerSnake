@@ -12,7 +12,7 @@ const BOOST_RAMP_DURATION = 6.0; // seconds to reach full boost speed
 const MAGNET_DISTANCE = 75;
 const MAGNET_FORCE = 600; // pixels per second
 const FOOD_COUNT = 300;
-const BOT_COUNT = 24; // Total 25 snakes (1 Player + 24 Bots)
+const BOT_COUNT = 44; // Total 45 snakes (1 Player + 44 Bots)
 const SEGMENT_SPACING = 6;
 const MIN_SNAKE_WIDTH = 4;
 const MAX_SNAKE_WIDTH = 14;
@@ -983,6 +983,770 @@ const SNAKE_STYLES = [
             ctx.lineTo(0, -size * 0.2);
             ctx.lineTo(-size * 0.8, -size * 0.8);
             ctx.lineTo(0, size * 0.5);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    // ---- New Styles (20 More) ----
+    {
+        id: 'vaporwave',
+        name: 'VAPOR',
+        colors: { primary: '#ff71ce', secondary: '#01cdfe', glow: '#ff71ce' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ff71ce';
+            ctx.strokeStyle = '#ff71ce';
+            ctx.lineWidth = snake.width;
+            ctx.lineCap = 'butt';
+            ctx.beginPath();
+            const len = snake.segments.length;
+            if (len > 0) ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+            for (let i = 1; i < len; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            ctx.stroke();
+            // Grid lines
+            ctx.strokeStyle = '#01cdfe';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = 0; i < len; i += 3) {
+                const s = snake.segments[i];
+                const w = snake.width;
+                ctx.moveTo(s.x - w, s.y - w);
+                ctx.lineTo(s.x + w, s.y + w);
+            }
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ff71ce';
+            ctx.shadowColor = '#01cdfe';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            // Sun gradient
+            const g = ctx.createLinearGradient(0, -size, 0, size);
+            g.addColorStop(0, '#ff71ce');
+            g.addColorStop(1, '#01cdfe');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.7, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'gummy',
+        name: 'GUMMY',
+        colors: { primary: '#ff4444', secondary: '#ff8888', glow: '#ffaaaa' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(255, 100, 100, 0.5)';
+            ctx.fillStyle = 'rgba(255, 50, 50, 0.6)';
+
+            for (let i = 0; i < snake.segments.length; i++) {
+                // Jelly wobble
+                const s = snake.segments[i];
+                const w = snake.width * (1 + Math.sin(i * 0.5 + performance.now() / 150) * 0.1);
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, w, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = 'rgba(255, 30, 30, 0.8)';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ffaaaa';
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            // Shine
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.beginPath();
+            ctx.arc(-size * 0.3, -size * 0.3, size * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'honeycomb',
+        name: 'HIVE',
+        colors: { primary: '#ffcc00', secondary: '#aa7700', glow: '#ffdd00' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ffcc00';
+            ctx.strokeStyle = '#aa7700';
+            ctx.fillStyle = '#ffcc00';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i < snake.segments.length; i += 2) {
+                const s = snake.segments[i];
+                const w = snake.width * 1.2;
+                ctx.beginPath();
+                // Hexagon
+                for (let k = 0; k < 6; k++) {
+                    const a = k * Math.PI / 3;
+                    const px = s.x + Math.cos(a) * w;
+                    const py = s.y + Math.sin(a) * w;
+                    if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ffaa00';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ffcc00';
+            ctx.beginPath();
+            for (let k = 0; k < 6; k++) {
+                const a = k * Math.PI / 3;
+                const px = Math.cos(a) * size * 1.2;
+                const py = Math.sin(a) * size * 1.2;
+                if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.fill();
+            // Bee stripes
+            ctx.fillStyle = '#000';
+            ctx.fillRect(-size * 0.5, -size * 0.8, size, size * 0.4);
+            ctx.fillRect(-size * 0.5, 0, size, size * 0.4);
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'obsidian',
+        name: 'OBSIDIAN',
+        colors: { primary: '#111111', secondary: '#440044', glow: '#660066' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#660066';
+            ctx.fillStyle = '#050505';
+
+            for (let i = 0; i < snake.segments.length; i++) {
+                const s = snake.segments[i];
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, snake.width, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Glossy streak
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = 'rgba(100, 0, 100, 0.8)';
+            ctx.beginPath();
+            if (snake.segments.length > 0) ctx.moveTo(snake.segments[0].x, snake.segments[0].y - snake.width * 0.5);
+            for (let i = 1; i < snake.segments.length; i++) {
+                ctx.lineTo(snake.segments[i].x, snake.segments[i].y - snake.width * 0.5);
+            }
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#000';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#aa00aa';
+            ctx.beginPath();
+            ctx.moveTo(size * 1.3, 0);
+            ctx.lineTo(-size * 0.5, size);
+            ctx.lineTo(-size * 0.5, -size);
+            ctx.fill();
+            ctx.fillStyle = '#330033'; // Facet
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size * 0.5, size);
+            ctx.lineTo(-size * 0.5, -size);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'carbon',
+        name: 'CARBON',
+        colors: { primary: '#333333', secondary: '#111111', glow: '#555555' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#555';
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = snake.width * 2;
+            ctx.lineCap = 'square';
+            ctx.beginPath();
+            const len = snake.segments.length;
+            if (len > 0) ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+            for (let i = 1; i < len; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            ctx.stroke();
+
+            // Weave pattern
+            ctx.fillStyle = '#444';
+            const w = snake.width;
+            for (let i = 0; i < len; i += 2) {
+                const s = snake.segments[i];
+                if (i % 4 === 0) ctx.fillRect(s.x - w, s.y - w, w, w);
+                else ctx.fillRect(s.x, s.y, w, w);
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#222';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#777';
+            ctx.fillRect(-size, -size, size * 2, size * 2);
+            ctx.strokeStyle = '#444';
+            ctx.strokeRect(-size, -size, size * 2, size * 2);
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'runic',
+        name: 'RUNE',
+        colors: { primary: '#444444', secondary: '#00ffcc', glow: '#00ffcc' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00ffcc';
+            ctx.fillStyle = '#333';
+
+            for (let i = 0; i < snake.segments.length; i += 3) {
+                const s = snake.segments[i];
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, snake.width * 1.1, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Rune
+                ctx.strokeStyle = '#00ffcc';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                const type = i % 3;
+                if (type === 0) {
+                    ctx.moveTo(s.x - 5, s.y - 5); ctx.lineTo(s.x + 5, s.y + 5);
+                    ctx.moveTo(s.x + 5, s.y - 5); ctx.lineTo(s.x - 5, s.y + 5);
+                } else if (type === 1) {
+                    ctx.moveTo(s.x, s.y - 6); ctx.lineTo(s.x, s.y + 6);
+                    ctx.moveTo(s.x - 4, s.y); ctx.lineTo(s.x + 4, s.y);
+                } else {
+                    ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
+                }
+                ctx.stroke();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#222';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#00ffcc';
+            ctx.beginPath();
+            ctx.moveTo(size * 1.2, 0);
+            ctx.lineTo(-size * 0.6, size);
+            ctx.lineTo(-size * 0.6, -size);
+            ctx.fill();
+            // Glowing sigil
+            ctx.strokeStyle = '#00ffcc';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.5, 0, Math.PI * 2);
+            ctx.moveTo(0, -size * 0.5); ctx.lineTo(0, size * 0.5);
+            ctx.stroke();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'laser',
+        name: 'LASER',
+        colors: { primary: '#ff0055', secondary: '#ffffff', glow: '#ff0055' },
+        renderBody: (ctx, snake) => {
+            // Core
+            ctx.lineCap = 'round';
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#ff0055';
+            ctx.strokeStyle = '#ff0055';
+            ctx.lineWidth = snake.width * 2; // Wide glow
+            ctx.beginPath();
+            const len = snake.segments.length;
+            if (len > 0) ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+            for (let i = 1; i < len; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            ctx.stroke();
+
+            // White hot center
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = snake.width * 0.5;
+            ctx.shadowBlur = 10; // Less blur for core
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = '#ff0055';
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'oil',
+        name: 'OIL',
+        colors: { primary: '#000000', secondary: '#555555', glow: '#880088' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(100, 100, 100, 0.5)';
+            const len = snake.segments.length;
+            const time = performance.now() / 500;
+
+            for (let i = 0; i < len; i += 2) {
+                const s = snake.segments[i];
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, snake.width, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Iridescent sheen
+                const hue = (s.x * 0.1 + s.y * 0.1 + time * 100) % 360;
+                ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.4)`;
+                ctx.beginPath();
+                ctx.arc(s.x - 2, s.y - 2, snake.width * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#000';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            const hue = (performance.now() / 5) % 360;
+            ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        },
+        update: (dt, snake) => {
+            if (Math.random() < 0.05) particles.push(new Particle(snake.x, snake.y, '#333', 'boost'));
+        }
+    },
+    {
+        id: 'bone',
+        name: 'BONE',
+        colors: { primary: '#eeeeee', secondary: '#aaaaaa', glow: '#ffffff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ffffff';
+            ctx.fillStyle = '#f0f0f0';
+
+            for (let i = 0; i < snake.segments.length; i += 3) {
+                const s = snake.segments[i];
+                ctx.beginPath();
+                // Verma shape
+                ctx.ellipse(s.x, s.y, snake.width * 1.2, snake.width * 0.8, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            // Spine connection
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = snake.width * 0.3;
+            ctx.beginPath();
+            const len = snake.segments.length;
+            if (len > 0) ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+            for (let i = 1; i < len; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#f5f5f5';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#fff';
+            // Skull shape (simplified)
+            ctx.beginPath();
+            ctx.arc(0, -size * 0.2, size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(-size * 0.4, -size * 0.2, size * 0.25, 0, Math.PI * 2);
+            ctx.arc(size * 0.4, -size * 0.2, size * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'hazard',
+        name: 'HAZARD',
+        colors: { primary: '#ffdd00', secondary: '#000000', glow: '#ffdd00' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ffdd00';
+            ctx.lineWidth = snake.width;
+            ctx.lineCap = 'square';
+
+            const len = snake.segments.length;
+            for (let i = 0; i < len - 1; i++) {
+                const s = snake.segments[i];
+                const next = snake.segments[i + 1];
+                ctx.strokeStyle = (i % 4 < 2) ? '#ffdd00' : '#000000';
+                ctx.beginPath();
+                ctx.moveTo(s.x, s.y);
+                ctx.lineTo(next.x, next.y);
+                ctx.stroke();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ffdd00';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ffdd00';
+            ctx.beginPath();
+            ctx.moveTo(size * 1.2, 0);
+            ctx.lineTo(-size * 0.8, size);
+            ctx.lineTo(-size * 0.8, -size);
+            ctx.fill();
+            ctx.fillStyle = '#000'; // Warning symbol !
+            ctx.font = `bold ${size}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('!', -size * 0.2, 0);
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'zen',
+        name: 'ZEN',
+        colors: { primary: '#000000', secondary: '#ffffff', glow: '#ffffff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = '#fff';
+            ctx.fillStyle = '#000';
+
+            // Ink blobs
+            const len = snake.segments.length;
+            for (let i = 0; i < len; i++) {
+                const s = snake.segments[i];
+                // Variations in size for brush stroke effect
+                const r = snake.width * (0.8 + Math.sin(i * 0.8) * 0.3);
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#000';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff'; // Yin yang dot
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'disco',
+        name: 'DISCO',
+        colors: { primary: '#ffffff', secondary: '#888888', glow: '#ffffff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#fff';
+
+            const len = snake.segments.length;
+            const time = performance.now() / 100;
+
+            for (let i = 0; i < len; i++) {
+                const s = snake.segments[i];
+                // Flashing colors
+                const hue = (time * 50 + i * 20) % 360;
+                ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, snake.width, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ddd'; // Mirror ball
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            // Sparkles
+            if (Math.random() < 0.3) {
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(rand(-size, size), rand(-size, size), 5, 5);
+            }
+        },
+        update: (dt, snake) => {
+            if (Math.random() < 0.2) {
+                const color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                particles.push(new Particle(snake.x, snake.y, color, 'sparkle'));
+            }
+        }
+    },
+    {
+        id: 'amethyst',
+        name: 'AMETHYST',
+        colors: { primary: '#9966cc', secondary: '#ccccff', glow: '#aa00ff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#aa00ff';
+            ctx.fillStyle = 'rgba(153, 102, 204, 0.8)';
+
+            for (let i = 0; i < snake.segments.length; i += 2) {
+                const s = snake.segments[i];
+                ctx.save();
+                ctx.translate(s.x, s.y);
+                ctx.rotate(i); // Random rotation
+                ctx.beginPath();
+                const w = snake.width;
+                ctx.moveTo(0, -w);
+                ctx.lineTo(w, 0);
+                ctx.lineTo(0, w);
+                ctx.lineTo(-w, 0);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.stroke();
+                ctx.restore();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#9966cc';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#aa00ff';
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 1.2);
+            ctx.lineTo(size, 0);
+            ctx.lineTo(0, size * 1.2);
+            ctx.lineTo(-size, 0);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'bamboo',
+        name: 'BAMBOO',
+        colors: { primary: '#55aa55', secondary: '#338833', glow: '#55aa55' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#55aa55';
+            ctx.lineWidth = snake.width * 1.5;
+            ctx.strokeStyle = '#55aa55';
+            ctx.lineCap = 'butt';
+
+            const len = snake.segments.length;
+            if (len > 0) {
+                ctx.beginPath();
+                ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+                for (let i = 1; i < len; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+                ctx.stroke();
+            }
+
+            // Nodes
+            ctx.fillStyle = '#225522';
+            for (let i = 0; i < len; i += 5) {
+                const s = snake.segments[i];
+                ctx.fillRect(s.x - snake.width, s.y - 2, snake.width * 2, 4);
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#66cc66';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#55aa55';
+            ctx.beginPath();
+            ctx.moveTo(size, 0);
+            ctx.lineTo(-size, size);
+            ctx.lineTo(-size, -size);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'cheese',
+        name: 'CHEESE',
+        colors: { primary: '#ffcc00', secondary: '#ffaa00', glow: '#ffcc00' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ffcc00';
+            ctx.lineWidth = snake.width * 1.5;
+            ctx.strokeStyle = '#ffcc00';
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            const len = snake.segments.length;
+            if (len > 0) ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+            for (let i = 1; i < len; i++) ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            ctx.stroke();
+
+            // Holes
+            ctx.fillStyle = 'rgba(100, 50, 0, 0.3)';
+            for (let i = 0; i < len; i += 3) {
+                const s = snake.segments[i];
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, snake.width * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ffcc00';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ffcc00';
+            ctx.beginPath();
+            ctx.moveTo(size * 1.5, 0);
+            ctx.lineTo(-size, size);
+            ctx.lineTo(-size, -size);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'tjedye',
+        name: 'TIEDYE',
+        colors: { primary: '#ff00ff', secondary: '#00ffff', glow: '#ffffff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#fff';
+
+            const len = snake.segments.length;
+            for (let i = 0; i < len; i++) {
+                const s = snake.segments[i];
+                // Spiral color pattern
+                const dist = i * 0.5;
+                const hue = (dist * 20) % 360;
+                ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, snake.width, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.fill();
+            // Peace sign attempt or just swirl
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.6, 0, Math.PI * 2);
+            ctx.moveTo(0, -size * 0.6); ctx.lineTo(0, size * 0.6);
+            ctx.moveTo(0, 0); ctx.lineTo(-size * 0.4, size * 0.4);
+            ctx.moveTo(0, 0); ctx.lineTo(size * 0.4, size * 0.4);
+            ctx.stroke();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'concrete',
+        name: 'STONE',
+        colors: { primary: '#888888', secondary: '#555555', glow: '#aaaaaa' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = '#aaa';
+            ctx.lineWidth = snake.width * 1.2;
+            ctx.strokeStyle = '#777';
+            ctx.lineCap = 'butt';
+
+            // Rough line
+            ctx.beginPath();
+            const len = snake.segments.length;
+            if (len > 0) ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+            for (let i = 1; i < len; i++) {
+                const s = snake.segments[i];
+                // Jitter
+                ctx.lineTo(s.x + (Math.random() - 0.5) * 2, s.y + (Math.random() - 0.5) * 2);
+            }
+            ctx.stroke();
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#888';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#aaa';
+            ctx.fillRect(-size, -size, size * 2, size * 2);
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'paper',
+        name: 'PAPER',
+        colors: { primary: '#ffffff', secondary: '#e0e0e0', glow: '#ffffff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = '#000'; // Shadow for paper lift effect
+            ctx.shadowOffsetY = 5;
+
+            ctx.fillStyle = '#fff';
+            const len = snake.segments.length;
+            const w = snake.width;
+
+            for (let i = 0; i < len; i += 2) {
+                const s = snake.segments[i];
+                // Triangle
+                ctx.beginPath();
+                ctx.moveTo(s.x + w, s.y);
+                ctx.lineTo(s.x - w, s.y + w);
+                ctx.lineTo(s.x - w, s.y - w);
+                ctx.fill();
+            }
+            ctx.shadowOffsetY = 0;
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#000';
+            ctx.beginPath();
+            ctx.moveTo(size * 1.5, 0);
+            ctx.lineTo(-size, size);
+            ctx.lineTo(0, 0); // Origami fold
+            ctx.lineTo(-size, -size);
+            ctx.fill();
+        },
+        update: (dt, snake) => { }
+    },
+    {
+        id: 'jelly',
+        name: 'JELLY',
+        colors: { primary: '#00ffff', secondary: '#ffffff', glow: '#00ffff' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00ffff';
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.4)';
+
+            // Tentacles trailing
+            const time = performance.now() / 200;
+            const len = snake.segments.length;
+            for (let i = 0; i < len; i++) {
+                const s = snake.segments[i];
+                const wave = Math.sin(i * 0.5 - time) * 5;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y + wave, snake.width * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#00ffff';
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 1.2, 0, Math.PI, true); // Semi circle top
+            ctx.lineTo(-size, size);
+            ctx.lineTo(size, size);
+            ctx.fill();
+        },
+        update: (dt, snake) => {
+            if (Math.random() < 0.1) particles.push(new Particle(snake.x, snake.y, 'rgba(0,255,255,0.5)', 'boost'));
+        }
+    },
+    {
+        id: 'retro',
+        name: 'RETRO',
+        colors: { primary: '#ffff00', secondary: '#000000', glow: '#ffff00' },
+        renderBody: (ctx, snake) => {
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffff00';
+
+            const len = snake.segments.length;
+            for (let i = 0; i < len; i += 2) {
+                const s = snake.segments[i];
+                ctx.fillRect(s.x - snake.width / 2, s.y - snake.width / 2, snake.width, snake.width);
+            }
+        },
+        renderHead: (ctx, snake, size) => {
+            ctx.fillStyle = '#ffff00';
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            // Pac shape
+            const mouth = Math.abs(Math.sin(performance.now() / 100)) * 0.5;
+            ctx.arc(0, 0, size * 1.2, mouth, Math.PI * 2 - mouth);
+            ctx.lineTo(0, 0);
             ctx.fill();
         },
         update: (dt, snake) => { }
