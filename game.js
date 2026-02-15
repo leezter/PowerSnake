@@ -1794,7 +1794,8 @@ let particles = [];
 let floatingTexts = [];
 let screenShake = 0;
 let player = null;
-let camera = { x: 0, y: 0, zoom: 1, dirX: 1, dirY: 0 };
+let camera = { x: 0, y: 0, zoom: 1, stX: 0, stY: 0 };
+let gameDt = 1 / 60; // stored each frame for render()
 let lastTime = 0;
 let animationId = null;
 let deathTime = 0;
@@ -2683,27 +2684,32 @@ function render() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
 
-    // Camera — lead ahead of the snake's head with smooth turning
+    // Camera — lead ahead with dual-stage position smoothing
     if (player && player.alive) {
+        const dt = gameDt;
         const dv = DIR_VECTORS[player.dir];
-        // Smoothly interpolate camera direction for buttery turn transitions
-        const dirLerp = 0.03;
-        camera.dirX = lerp(camera.dirX, dv.x, dirLerp);
-        camera.dirY = lerp(camera.dirY, dv.y, dirLerp);
-        // Normalize the smoothed direction so diagonal transitions don't shrink
-        const dirLen = Math.sqrt(camera.dirX * camera.dirX + camera.dirY * camera.dirY) || 1;
-        const ndx = camera.dirX / dirLen;
-        const ndy = camera.dirY / dirLen;
 
+        // --- Compute lookahead target directly from snake direction ---
         const lookAhead = 80 + player.speed * 25;
-        const targetX = player.x + ndx * lookAhead;
-        const targetY = player.y + ndy * lookAhead;
-        camera.x = lerp(camera.x, targetX, 0.045);
-        camera.y = lerp(camera.y, targetY, 0.045);
+        const rawTargetX = player.x + dv.x * lookAhead;
+        const rawTargetY = player.y + dv.y * lookAhead;
 
-        // Zoom based on snake size
+        // --- Dual-stage position smoothing (second-order filter for silky turns) ---
+        // Stage 1: Smooth the target itself (~0.15s time constant)
+        //   Softens the onset of movement on direction change
+        const targetT = 1 - Math.exp(-dt * 6.5);
+        camera.stX = lerp(camera.stX, rawTargetX, targetT);
+        camera.stY = lerp(camera.stY, rawTargetY, targetT);
+
+        // Stage 2: Smooth camera toward the smoothed target (~0.3s time constant)
+        //   Adds soft inertia — camera eases into and out of turns
+        const posT = 1 - Math.exp(-dt * 3.2);
+        camera.x = lerp(camera.x, camera.stX, posT);
+        camera.y = lerp(camera.y, camera.stY, posT);
+
+        // Zoom based on snake size (dt-independent)
         const targetZoom = clamp(1.0 - player.segments.length * 0.0005, 0.45, 1.0);
-        camera.zoom = lerp(camera.zoom, targetZoom, 0.02);
+        camera.zoom = lerp(camera.zoom, targetZoom, 1 - Math.exp(-dt * 2.0));
     }
 
     ctx.save();
@@ -3370,9 +3376,13 @@ function startGame(nickname) {
     player = new Snake(nickname || 'Player', playerStyle, true);
     snakes.push(player);
 
-    // Camera to player
-    camera.x = player.x;
-    camera.y = player.y;
+    // Camera to player (including smooth target buffer + direction angle)
+    const spawnDv = DIR_VECTORS[player.dir];
+    const spawnLookAhead = 80 + BASE_SPEED * 25;
+    camera.x = player.x + spawnDv.x * spawnLookAhead;
+    camera.y = player.y + spawnDv.y * spawnLookAhead;
+    camera.stX = camera.x;
+    camera.stY = camera.y;
     camera.zoom = 1.0;
 
     // Create bots with random styles
@@ -3456,6 +3466,7 @@ function gameLoop(timestamp) {
 
     const now = timestamp || performance.now();
     let dt = (now - lastTime) / 1000;
+    gameDt = dt;
     lastTime = now;
 
     // Cap dt to avoid huge jumps
@@ -4577,9 +4588,13 @@ function respawnPlayer() {
 
     snakes.push(player);
 
-    // Reset Camera Immediately
-    camera.x = player.x;
-    camera.y = player.y;
+    // Reset Camera Immediately (including smooth target buffer + direction)
+    const respawnDv = DIR_VECTORS[player.dir];
+    const respawnLookAhead = 80 + BASE_SPEED * 25;
+    camera.x = player.x + respawnDv.x * respawnLookAhead;
+    camera.y = player.y + respawnDv.y * respawnLookAhead;
+    camera.stX = camera.x;
+    camera.stY = camera.y;
     camera.zoom = 1.0;
 
     // UI Reset
