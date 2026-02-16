@@ -1782,14 +1782,15 @@ const finalLength = document.getElementById('finalLength');
 const finalRank = document.getElementById('finalRank');
 const boostIndicator = document.getElementById('boostIndicator');
 const selectSnakeButton = document.getElementById('selectSnakeButton');
-const snakeSelectionScreen = document.getElementById('snakeSelectionScreen');
+const deathSelectionButton = document.getElementById('deathSelectionButton');
+const deathHomeButton = document.getElementById('deathHomeButton');
 const snakeGrid = document.getElementById('snakeGrid');
 const backButton = document.getElementById('backButton');
 const highScoreValue = document.getElementById('highScoreValue');
 
 // ---- Game State ----
 let gameRunning = false;
-let lowQuality = false;
+let lowQuality = true; // Default ON for better performance
 let highScore = 0;
 let snakes = [];
 let foods = [];
@@ -3375,6 +3376,9 @@ window.addEventListener('touchcancel', handleTouchEnd);
 
 // ---- Game Flow ----
 function startGame(nickname) {
+    // Push history state so the Back button works
+    history.pushState({ page: 'game' }, 'In Game', '#game');
+
     if (nickname) localStorage.setItem('ps_nickname', nickname);
     snakes = [];
     foods = [];
@@ -4627,6 +4631,12 @@ function respawnPlayer() {
     soundManager.playStart();
 }
 
+deathHomeButton.addEventListener('click', () => {
+    // We used pushState, so going back will trigger the popstate event
+    // which handles the cleanup and navigation to home.
+    history.back();
+});
+
 nicknameInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
@@ -4637,7 +4647,33 @@ nicknameInput.addEventListener('keydown', (e) => {
     }
 });
 
-// Focus nickname input on load
+// Handle Android Back Button (History API)
+window.addEventListener('popstate', (event) => {
+    // If we pop back to the initial state (null) or a non-game state
+    // AND we are currently in a "game" context (running or dead)
+    if (!event.state || event.state.page !== 'game') {
+        goToHomeScreen();
+    }
+});
+
+function goToHomeScreen() {
+    gameRunning = false;
+    soundManager.resume(); // Ensure context is active
+
+    // Hide all in-game layers
+    if (hud) hud.classList.add('hidden');
+    if (deathScreen) deathScreen.classList.add('hidden');
+    if (typeof snakeSelectionScreen !== 'undefined') {
+        snakeSelectionScreen.classList.add('hidden');
+    }
+
+    // Show Start Screen
+    if (startScreen) startScreen.classList.remove('hidden');
+
+    // Reset inputs
+    if (nicknameInput) nicknameInput.focus();
+}
+
 // Focus nickname input on load
 const lowQualityToggle = document.getElementById('lowQualityToggle');
 
@@ -4661,10 +4697,13 @@ function loadSettings() {
         if (savedStyle) playerSnakeStyleIndex = parseInt(savedStyle, 10);
 
         const savedQuality = localStorage.getItem('ps_quality');
-        if (savedQuality === 'true') {
-            lowQuality = true;
-            if (lowQualityToggle) lowQualityToggle.checked = true;
+        if (savedQuality !== null) {
+            lowQuality = (savedQuality === 'true');
+        } else {
+            lowQuality = true; // Default
         }
+
+        if (lowQualityToggle) lowQualityToggle.checked = lowQuality;
     } catch (e) {
         console.warn('LocalStorage error:', e);
     }
