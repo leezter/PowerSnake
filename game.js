@@ -1760,12 +1760,12 @@ const BOT_NAMES = SNAKE_STYLES.map(s => s.name);
 // Each tier has a fixed cost — every snake in a tier costs the same amount
 const UNLOCK_TIERS = [
     { label: 'STARTER', cost: 0, color: '#ffffff' },
-    { label: 'COMMON', cost: 50, color: '#55ff55' },
-    { label: 'RARE', cost: 200, color: '#00aaff' },
-    { label: 'EPIC', cost: 500, color: '#aa55ff' },
-    { label: 'LEGENDARY', cost: 1500, color: '#ffaa00' },
-    { label: 'MYTHIC', cost: 4000, color: '#ff3355' },
-    { label: 'ULTIMATE', cost: 10000, color: '#ff00ff' },
+    { label: 'COMMON', cost: 500, color: '#55ff55' },
+    { label: 'RARE', cost: 2000, color: '#00aaff' },
+    { label: 'EPIC', cost: 3000, color: '#aa55ff' },
+    { label: 'LEGENDARY', cost: 4000, color: '#ffaa00' },
+    { label: 'MYTHIC', cost: 5000, color: '#ff3355' },
+    { label: 'ULTIMATE', cost: 6000, color: '#ff00ff' },
 ];
 
 // Map each snake index to its tier index
@@ -3565,6 +3565,9 @@ function onPlayerDeath() {
 
     // Check for new unlocks
     pendingUnlocks = checkNewUnlocks();
+
+    // Reset progress so players must earn the next unlock in a single life
+    currentUnlockProgress = 0;
     saveUnlockData();
 
     // Calculate rank
