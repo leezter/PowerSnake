@@ -780,13 +780,388 @@ body::before {
 }
 
 /* ============================================
+   Gamification — Locked Cards & Rarity
+   ============================================ */
+
+/* Locked card styling */
+.snake-card.locked {
+    cursor: not-allowed;
+    position: relative;
+}
+
+.snake-card.locked canvas {
+    filter: grayscale(0.7) brightness(0.4);
+}
+
+.snake-card.locked .snake-name {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.snake-card.locked::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+    animation: shimmer 3s infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -50%;
+    }
+
+    100% {
+        left: 150%;
+    }
+}
+
+/* Lock overlay */
+.lock-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.lock-icon {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+}
+
+/* Progress bar */
+.progress-bar {
+    width: 70%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.cost-label {
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Rarity badge */
+.rarity-badge {
+    font-family: var(--font-display);
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-top: 4px;
+    padding: 2px 8px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    opacity: 0.8;
+}
+
+/* Shake deny animation */
+@keyframes shakeDeny {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    20% {
+        transform: translateX(-6px);
+    }
+
+    40% {
+        transform: translateX(6px);
+    }
+
+    60% {
+        transform: translateX(-4px);
+    }
+
+    80% {
+        transform: translateX(4px);
+    }
+}
+
+.snake-card.shake-deny {
+    animation: shakeDeny 0.4s ease;
+    border-color: rgba(255, 50, 50, 0.6) !important;
+    box-shadow: 0 0 15px rgba(255, 50, 50, 0.3) !important;
+}
+
+/* Next-to-unlock card highlight */
+.snake-card.next-unlock {
+    border-color: rgba(255, 255, 255, 0.25);
+    animation: nextUnlockPulse 2s ease-in-out infinite;
+}
+
+.snake-card.next-unlock canvas {
+    filter: grayscale(0.3) brightness(0.7);
+}
+
+@keyframes nextUnlockPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 18px rgba(255, 255, 255, 0.25);
+    }
+}
+
+/* ============================================
+   Gamification — Next Unlock Teaser
+   ============================================ */
+.next-unlock-teaser {
+    margin-bottom: 20px;
+    padding: 12px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+}
+
+.next-unlock-teaser.hidden {
+    display: none;
+}
+
+.teaser-label {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 8px;
+}
+
+.teaser-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.teaser-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+    box-shadow: 0 0 10px currentColor;
+}
+
+.teaser-pts {
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.4);
+    text-align: right;
+}
+
+/* ============================================
+   Gamification — Death Screen Extras
+   ============================================ */
+.points-earned {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: 3px;
+    color: var(--neon-green);
+    text-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+    margin-bottom: 8px;
+}
+
+@keyframes pointsPop {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.3);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.points-earned.points-pop {
+    animation: pointsPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.next-unlock-hint {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 20px;
+}
+
+.next-unlock-hint.hidden {
+    display: none;
+}
+
+.almost-there {
+    color: var(--neon-yellow);
+    font-weight: 700;
+    animation: pulseYellow 1s infinite;
+}
+
+@keyframes pulseYellow {
+
+    0%,
+    100% {
+        text-shadow: 0 0 10px rgba(255, 230, 0, 0.4);
+    }
+
+    50% {
+        text-shadow: 0 0 20px rgba(255, 230, 0, 0.8);
+    }
+}
+
+/* ============================================
+   Gamification — Unlock Celebration
+   ============================================ */
+.unlock-celebration-content {
+    max-width: 500px;
+}
+
+.unlock-stars {
+    font-size: 2rem;
+    color: var(--neon-yellow);
+    letter-spacing: 10px;
+    margin-bottom: 10px;
+    animation: starPulse 1s infinite;
+}
+
+@keyframes starPulse {
+
+    0%,
+    100% {
+        text-shadow: 0 0 10px rgba(255, 230, 0, 0.5);
+        transform: scale(1);
+    }
+
+    50% {
+        text-shadow: 0 0 30px rgba(255, 230, 0, 1);
+        transform: scale(1.1);
+    }
+}
+
+.unlock-count {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.8rem;
+    letter-spacing: 4px;
+    color: #fff;
+    text-shadow:
+        0 0 20px rgba(0, 240, 255, 0.6),
+        0 0 40px rgba(0, 240, 255, 0.3);
+    margin-bottom: 25px;
+    animation: unlockReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes unlockReveal {
+    0% {
+        transform: scale(0.3) rotateX(90deg);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1) rotateX(0deg);
+        opacity: 1;
+    }
+}
+
+.unlock-snakes-list {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+}
+
+.unlock-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    animation: unlockItemPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes unlockItemPop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.unlock-item canvas {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--neon-cyan);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+.unlock-item-name {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+}
+
+.unlock-dismiss {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.4);
+    animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ============================================
    Portrait Mobile Fixes (Eliminate Screen)
    ============================================ */
 @media (max-width: 768px) and (orientation: portrait) {
     .death-stats {
         flex-direction: column;
         gap: 10px;
-        /* Tighter gap */
         margin-bottom: 30px;
     }
 
@@ -797,30 +1172,38 @@ body::before {
         justify-content: space-between;
         align-items: center;
         padding: 10px 20px;
-        /* Horizontal layout, compact vertical padding */
         text-align: left;
     }
 
     .stat-label {
         margin-bottom: 0;
         font-size: 0.9rem;
-        /* Readable size */
     }
 
     .stat-value {
         font-size: 1.4rem;
-        /* Adjusted for balance */
     }
 
     .death-title {
         font-size: 2.2rem;
-        /* Avoid wrapping or taking too much space */
         margin-bottom: 25px;
     }
 
     .overlay-content {
         width: 85%;
-        /* slightly narrower to ensure breathing room on edges */
         padding: 30px 20px;
+    }
+
+    .unlock-snakes-list {
+        gap: 10px;
+    }
+
+    .unlock-item canvas {
+        width: 60px;
+        height: 60px;
+    }
+
+    .unlock-count {
+        font-size: 1.3rem;
     }
 }

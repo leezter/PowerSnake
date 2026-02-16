@@ -19,6 +19,7 @@
             <p id="highScoreDisplay"
                 style="color: var(--neon-yellow); margin-bottom: 20px; font-family: var(--font-display); letter-spacing: 2px;">
                 HIGH SCORE: <span id="highScoreValue">0</span></p>
+            <div id="nextUnlockTeaser" class="next-unlock-teaser hidden"></div>
             <div class="input-group">
                 <input type="text" id="nicknameInput" maxlength="15" placeholder="Enter nickname..." autocomplete="off"
                     spellcheck="false">
@@ -72,11 +73,23 @@
                     <span class="stat-value" id="finalRank">#1</span>
                 </div>
             </div>
+            <div id="pointsEarned" class="points-earned"></div>
+            <div id="nextUnlockHint" class="next-unlock-hint hidden"></div>
             <button id="replayButton" class="neon-button">PLAY AGAIN</button>
             <button id="deathSelectionButton" class="neon-button secondary-btn" style="margin-top: 15px;">SELECT
                 SNAKE</button>
             <button id="deathHomeButton" class="neon-button secondary-btn" style="margin-top: 15px;">BACK TO
                 HOME</button>
+        </div>
+    </div>
+
+    <!-- Unlock Celebration Overlay -->
+    <div id="unlockCelebration" class="overlay hidden">
+        <div class="overlay-content unlock-celebration-content">
+            <div class="unlock-stars">✦ ✦ ✦</div>
+            <h2 class="unlock-count">NEW SNAKE UNLOCKED!</h2>
+            <div class="unlock-snakes-list"></div>
+            <p class="unlock-dismiss">TAP TO CONTINUE</p>
         </div>
     </div>
 

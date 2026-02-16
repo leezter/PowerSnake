@@ -1756,6 +1756,89 @@ const SNAKE_STYLES = [
 const NEON_COLORS = SNAKE_STYLES.map(s => s.colors.primary);
 const BOT_NAMES = SNAKE_STYLES.map(s => s.name);
 
+// ---- Unlock Tiers (Gamification) ----
+// Each tier has a fixed cost — every snake in a tier costs the same amount
+const UNLOCK_TIERS = [
+    { label: 'STARTER', cost: 0, color: '#ffffff' },
+    { label: 'COMMON', cost: 50, color: '#55ff55' },
+    { label: 'RARE', cost: 200, color: '#00aaff' },
+    { label: 'EPIC', cost: 500, color: '#aa55ff' },
+    { label: 'LEGENDARY', cost: 1500, color: '#ffaa00' },
+    { label: 'MYTHIC', cost: 4000, color: '#ff3355' },
+    { label: 'ULTIMATE', cost: 10000, color: '#ff00ff' },
+];
+
+// Map each snake index to its tier index
+const SNAKE_TIER_MAP = [
+    0, 0, 0,          // 0-2: STARTER (neon_cyber, inferno, void)
+    1, 1, 1, 1,       // 3-6: COMMON (glitch, plasma, midas, toxic)
+    1, 1, 1, 1,       // 7-10: COMMON (prism, stealth, circuit, radium)
+    2, 2, 2, 2, 2,    // 11-15: RARE (cosmos, vampire, pixel, candy, magma)
+    2, 2, 2, 2, 2,    // 16-20: RARE (frost, voltaic, azure, verdant, chrome)
+    3, 3, 3, 3, 3,    // 21-25: EPIC (sketch, spectrum, matrix, samurai, vaporwave)
+    3, 3, 3, 3, 3,    // 26-30: EPIC (gummy, honeycomb, obsidian, carbon, runic)
+    4, 4, 4, 4,       // 31-34: LEGENDARY (laser, oil, bone, hazard)
+    4, 4, 4, 4,       // 35-38: LEGENDARY (zen, disco, amethyst, bamboo)
+    5, 5, 5, 5,       // 39-42: MYTHIC (cheese, tiedye, stone, paper)
+    6, 6,             // 43-44: ULTIMATE (jelly, retro)
+];
+
+// Sequential unlock order: snakes unlock ONE AT A TIME in this order
+const UNLOCK_ORDER = [
+    3, 4, 5, 6, 7, 8, 9, 10,                       // COMMON (8)
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,         // RARE (10)
+    21, 22, 23, 24, 25, 26, 27, 28, 29, 30,         // EPIC (10)
+    31, 32, 33, 34, 35, 36, 37, 38,                  // LEGENDARY (8)
+    39, 40, 41, 42,                                   // MYTHIC (4)
+    43, 44,                                           // ULTIMATE (2)
+];
+
+function getSnakeTier(index) {
+    return UNLOCK_TIERS[SNAKE_TIER_MAP[index] || 0];
+}
+
+function getSnakeCost(index) {
+    return getSnakeTier(index).cost;
+}
+
+function isSnakeUnlocked(index) {
+    return unlockedSnakes.has(index);
+}
+
+function getNextUnlock() {
+    for (let pos = 0; pos < UNLOCK_ORDER.length; pos++) {
+        const idx = UNLOCK_ORDER[pos];
+        if (!unlockedSnakes.has(idx)) {
+            const cost = getSnakeCost(idx);
+            return { index: idx, cost, name: SNAKE_STYLES[idx].name, tier: getSnakeTier(idx) };
+        }
+    }
+    return null;
+}
+
+function checkNewUnlocks() {
+    const newlyUnlocked = [];
+    let next = getNextUnlock();
+    while (next && currentUnlockProgress >= next.cost) {
+        currentUnlockProgress -= next.cost;
+        unlockedSnakes.add(next.index);
+        newlyUnlocked.push(next.index);
+        next = getNextUnlock();
+    }
+    if (newlyUnlocked.length > 0) {
+        saveUnlockData();
+    }
+    return newlyUnlocked;
+}
+
+function saveUnlockData() {
+    try {
+        localStorage.setItem('ps_lifetime_points', lifetimePoints);
+        localStorage.setItem('ps_unlock_progress', currentUnlockProgress);
+        localStorage.setItem('ps_unlocked_snakes', JSON.stringify([...unlockedSnakes]));
+    } catch (e) { /* ignore */ }
+}
+
 // Directions: 0=right, 1=down, 2=left, 3=up
 const DIR_VECTORS = [
     { x: 1, y: 0 },
@@ -1787,6 +1870,10 @@ const deathHomeButton = document.getElementById('deathHomeButton');
 const snakeGrid = document.getElementById('snakeGrid');
 const backButton = document.getElementById('backButton');
 const highScoreValue = document.getElementById('highScoreValue');
+const nextUnlockTeaser = document.getElementById('nextUnlockTeaser');
+const unlockCelebration = document.getElementById('unlockCelebration');
+const pointsEarnedEl = document.getElementById('pointsEarned');
+const nextUnlockHint = document.getElementById('nextUnlockHint');
 
 // ---- Game State ----
 let gameRunning = false;
@@ -1807,6 +1894,10 @@ let currentKing = null;
 let hudUpdateTimer = 0;
 let playerSnakeStyleIndex = 0;
 let screenScale = 1.0;
+let lifetimePoints = 0;
+let currentUnlockProgress = 0;
+let unlockedSnakes = new Set([0, 1, 2]); // 3 free starters
+let pendingUnlocks = []; // Queue of newly unlocked snake indices
 
 // ---- Resize ----
 function resizeCanvas() {
@@ -3460,11 +3551,21 @@ function startGame(nickname) {
 
 function onPlayerDeath() {
     deathTime = performance.now();
+    const earnedPoints = player ? player.score : 0;
+
     if (player && player.score > highScore) {
         highScore = player.score;
         localStorage.setItem('ps_highscore', highScore);
         if (highScoreValue) highScoreValue.textContent = highScore;
     }
+
+    // Award points
+    lifetimePoints += earnedPoints;
+    currentUnlockProgress += earnedPoints;
+
+    // Check for new unlocks
+    pendingUnlocks = checkNewUnlocks();
+    saveUnlockData();
 
     // Calculate rank
     const allSorted = [...snakes].sort((a, b) => b.score - a.score);
@@ -3474,12 +3575,121 @@ function onPlayerDeath() {
     finalLength.textContent = player.segments.length;
     finalRank.textContent = `#${rank}`;
 
-    // Short delay before showing death screen (Game continues running)
+    // Update death screen extras
+    if (pointsEarnedEl) {
+        pointsEarnedEl.textContent = `+${earnedPoints} PTS`;
+        pointsEarnedEl.classList.add('points-pop');
+        setTimeout(() => pointsEarnedEl.classList.remove('points-pop'), 600);
+    }
+
+    // Next unlock hint on death screen
+    if (nextUnlockHint) {
+        const next = getNextUnlock();
+        if (next) {
+            const remaining = next.cost - currentUnlockProgress;
+            const pct = Math.min(100, (currentUnlockProgress / next.cost) * 100);
+            if (pct >= 70) {
+                nextUnlockHint.innerHTML = `<span class="almost-there">ALMOST THERE!</span> <span style="color:${next.tier.color}">${next.name}</span> in <span class="accent">${remaining}</span> pts`;
+                nextUnlockHint.classList.remove('hidden');
+            } else {
+                nextUnlockHint.innerHTML = `Next: <span style="color:${next.tier.color}">${next.name}</span> — ${currentUnlockProgress}/${next.cost} pts`;
+                nextUnlockHint.classList.remove('hidden');
+            }
+        } else {
+            nextUnlockHint.textContent = 'ALL SNAKES UNLOCKED!';
+            nextUnlockHint.classList.remove('hidden');
+        }
+    }
+
+    // Short delay before showing death/celebration screen
     setTimeout(() => {
-        // Do NOT stop gameRunning.
         hud.classList.add('hidden');
-        deathScreen.classList.remove('hidden');
+
+        if (pendingUnlocks.length > 0) {
+            showUnlockCelebration(pendingUnlocks);
+        } else {
+            deathScreen.classList.remove('hidden');
+        }
     }, 1200);
+}
+
+function showUnlockCelebration(unlockedIndices) {
+    if (!unlockCelebration) {
+        deathScreen.classList.remove('hidden');
+        return;
+    }
+
+    const container = unlockCelebration.querySelector('.unlock-snakes-list');
+    const countEl = unlockCelebration.querySelector('.unlock-count');
+    if (container) container.innerHTML = '';
+    if (countEl) countEl.textContent = `${unlockedIndices.length} NEW SNAKE${unlockedIndices.length > 1 ? 'S' : ''} UNLOCKED!`;
+
+    unlockedIndices.forEach(idx => {
+        const style = SNAKE_STYLES[idx];
+        const tier = getSnakeTier(idx);
+        const item = document.createElement('div');
+        item.className = 'unlock-item';
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 100;
+        canvas.height = 100;
+        item.appendChild(canvas);
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'unlock-item-name';
+        nameEl.textContent = style.name;
+        item.appendChild(nameEl);
+
+        const tierEl = document.createElement('div');
+        tierEl.className = 'rarity-badge';
+        tierEl.style.color = tier.color;
+        tierEl.textContent = tier.label;
+        item.appendChild(tierEl);
+
+        if (container) container.appendChild(item);
+
+        requestAnimationFrame(() => renderSnakePreview(canvas, style));
+    });
+
+    unlockCelebration.classList.remove('hidden');
+
+    // Play celebration SFX
+    if (soundManager && soundManager.ctx) {
+        if (soundManager.ctx.state === 'suspended') soundManager.resume();
+        // Ascending triumphant chord
+        soundManager.playTone({ freq: 523, type: 'triangle', duration: 0.15, vol: 0.25, slide: 100, pan: -0.3 });
+        setTimeout(() => soundManager.playTone({ freq: 659, type: 'triangle', duration: 0.15, vol: 0.25, slide: 100, pan: 0 }), 100);
+        setTimeout(() => soundManager.playTone({ freq: 784, type: 'triangle', duration: 0.2, vol: 0.3, slide: 100, pan: 0.3 }), 200);
+        setTimeout(() => soundManager.playTone({ freq: 1047, type: 'sine', duration: 0.4, vol: 0.2, slide: 50, pan: 0 }), 350);
+    }
+
+    // Auto-dismiss after 4 seconds
+    const dismissCelebration = () => {
+        unlockCelebration.classList.add('hidden');
+        deathScreen.classList.remove('hidden');
+        unlockCelebration.removeEventListener('click', dismissCelebration);
+    };
+    unlockCelebration.addEventListener('click', dismissCelebration);
+    setTimeout(dismissCelebration, 4000);
+}
+
+function updateNextUnlockTeaser() {
+    if (!nextUnlockTeaser) return;
+    const next = getNextUnlock();
+    if (next) {
+        const pct = Math.min(100, (currentUnlockProgress / next.cost) * 100);
+        nextUnlockTeaser.innerHTML = `
+            <div class="teaser-label">NEXT UNLOCK: <span style="color:${next.tier.color}">${next.name}</span></div>
+            <div class="teaser-bar">
+                <div class="teaser-fill" style="width:${pct}%;background:${next.tier.color}"></div>
+            </div>
+            <div class="teaser-pts">${currentUnlockProgress} / ${next.cost} PTS</div>
+        `;
+        nextUnlockTeaser.classList.remove('hidden');
+    } else {
+        nextUnlockTeaser.innerHTML = '<div class="teaser-label" style="color:#ff00ff">✦ ALL SNAKES UNLOCKED ✦</div>';
+        nextUnlockTeaser.classList.remove('hidden');
+    }
 }
 
 function gameLoop(timestamp) {
@@ -4669,6 +4879,7 @@ function goToHomeScreen() {
 
     // Show Start Screen
     if (startScreen) startScreen.classList.remove('hidden');
+    updateNextUnlockTeaser();
 
     // Reset inputs
     if (nicknameInput) nicknameInput.focus();
@@ -4679,6 +4890,7 @@ const lowQualityToggle = document.getElementById('lowQualityToggle');
 
 window.addEventListener('load', () => {
     loadSettings();
+    updateNextUnlockTeaser();
     nicknameInput.focus();
 });
 
@@ -4701,6 +4913,30 @@ function loadSettings() {
             lowQuality = (savedQuality === 'true');
         } else {
             lowQuality = true; // Default
+        }
+
+        // Load unlock data
+        const savedLP = localStorage.getItem('ps_lifetime_points');
+        if (savedLP) lifetimePoints = parseInt(savedLP, 10) || 0;
+
+        const savedProgress = localStorage.getItem('ps_unlock_progress');
+        if (savedProgress) currentUnlockProgress = parseInt(savedProgress, 10) || 0;
+
+        const savedUnlocks = localStorage.getItem('ps_unlocked_snakes');
+        if (savedUnlocks) {
+            try {
+                const arr = JSON.parse(savedUnlocks);
+                unlockedSnakes = new Set(arr);
+            } catch (_) { }
+        }
+        // Ensure starters are always unlocked
+        unlockedSnakes.add(0);
+        unlockedSnakes.add(1);
+        unlockedSnakes.add(2);
+
+        // If selected snake is locked, reset to first unlocked
+        if (!unlockedSnakes.has(playerSnakeStyleIndex)) {
+            playerSnakeStyleIndex = 0;
         }
 
         if (lowQualityToggle) lowQualityToggle.checked = lowQuality;
@@ -4733,17 +4969,22 @@ document.addEventListener('visibilitychange', () => {
 
 function initSelectionScreen() {
     snakeGrid.innerHTML = '';
+    const nextUp = getNextUnlock(); // The single next snake to unlock
 
     SNAKE_STYLES.forEach((style, index) => {
         const card = document.createElement('div');
-        card.className = `snake-card ${index === playerSnakeStyleIndex ? 'selected' : ''}`;
-        card.onclick = () => selectSnake(index);
+        const unlocked = isSnakeUnlocked(index);
+        const tier = getSnakeTier(index);
+        const cost = getSnakeCost(index);
+        const isNextUnlock = nextUp && nextUp.index === index;
+
+        card.className = `snake-card${index === playerSnakeStyleIndex ? ' selected' : ''}${!unlocked ? ' locked' : ''}${isNextUnlock ? ' next-unlock' : ''}`;
+        card.onclick = () => selectSnake(index, card);
 
         // Canvas for preview
         const canvas = document.createElement('canvas');
         canvas.width = 100;
         canvas.height = 100;
-        // Make sure canvas background is transparent or handled by CSS
         card.appendChild(canvas);
 
         // Name
@@ -4752,16 +4993,74 @@ function initSelectionScreen() {
         name.textContent = style.name;
         card.appendChild(name);
 
+        // Rarity badge
+        const badge = document.createElement('div');
+        badge.className = 'rarity-badge';
+        badge.style.color = tier.color;
+        badge.style.borderColor = tier.color;
+        badge.textContent = tier.label;
+        card.appendChild(badge);
+
+        // Lock overlay for locked snakes
+        if (!unlocked) {
+            const lockOverlay = document.createElement('div');
+            lockOverlay.className = 'lock-overlay';
+
+            const lockIcon = document.createElement('div');
+            lockIcon.className = 'lock-icon';
+            lockIcon.textContent = '\uD83D\uDD12';
+            lockOverlay.appendChild(lockIcon);
+
+            // Only show progress bar on the NEXT snake to unlock
+            if (isNextUnlock) {
+                const progressWrap = document.createElement('div');
+                progressWrap.className = 'progress-bar';
+                const progressFill = document.createElement('div');
+                progressFill.className = 'progress-fill';
+                const pct = Math.min(100, (currentUnlockProgress / cost) * 100);
+                progressFill.style.width = `${pct}%`;
+                progressFill.style.background = tier.color;
+                progressWrap.appendChild(progressFill);
+                lockOverlay.appendChild(progressWrap);
+
+                const costLabel = document.createElement('div');
+                costLabel.className = 'cost-label';
+                costLabel.textContent = `${currentUnlockProgress}/${cost}`;
+                lockOverlay.appendChild(costLabel);
+            } else {
+                const costLabel = document.createElement('div');
+                costLabel.className = 'cost-label';
+                costLabel.textContent = `${cost} PTS`;
+                lockOverlay.appendChild(costLabel);
+            }
+
+            card.appendChild(lockOverlay);
+        }
+
         snakeGrid.appendChild(card);
 
         // Render preview
-        // Use a timeout to ensure canvas is ready/layout is done if needed, though not strictly necessary here
         requestAnimationFrame(() => renderSnakePreview(canvas, style));
     });
 }
 
-function selectSnake(index) {
+function selectSnake(index, cardEl) {
     if (index < 0 || index >= SNAKE_STYLES.length) return;
+
+    // Deny if locked
+    if (!isSnakeUnlocked(index)) {
+        // Shake animation
+        if (cardEl) {
+            cardEl.classList.add('shake-deny');
+            setTimeout(() => cardEl.classList.remove('shake-deny'), 400);
+        }
+        // Denied buzz SFX
+        if (soundManager && soundManager.ctx) {
+            if (soundManager.ctx.state === 'suspended') soundManager.resume();
+            soundManager.playTone({ freq: 100, type: 'sawtooth', duration: 0.15, vol: 0.15, slide: -30, pan: 0 });
+        }
+        return;
+    }
 
     playerSnakeStyleIndex = index;
     localStorage.setItem('ps_style', index);
@@ -4772,11 +5071,9 @@ function selectSnake(index) {
         cards[i].classList.toggle('selected', i === index);
     }
 
-    // Play a distinct sound for selection
+    // Play selection sound
     if (soundManager && soundManager.ctx) {
         if (soundManager.ctx.state === 'suspended') soundManager.resume();
-
-        // Play a robotic confirmation or style-specific tone
         const freq = 200 + (index * 20);
         soundManager.playTone({ freq: freq, type: 'triangle', duration: 0.1, vol: 0.2, slide: 50, pan: 0 });
     }
