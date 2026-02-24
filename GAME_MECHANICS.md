@@ -88,6 +88,19 @@ Food items are attracted to snake heads when they come within range, creating a 
 *   **Force:** `MAGNET_FORCE` (600 - 1200 px/s). The force increases as the food gets closer to the snake head.
 *   **Logic:** Food moves towards the closest snake head within range.
 
+### 2.6 Unlock System (Hardcore Progression)
+The game features a high-stakes progression system where players unlock new snake styles sequentially.
+
+*   **Sequential Unlocks:** Snakes are unlocked one by one in a fixed order (Common → Rare → Epic → Legendary → Mythic → Ultimate).
+*   **Hardcore Rule:** Progress towards the *next* unlock is **reset to 0** upon death. Players must earn the full cost of the next snake in a **single life** to unlock it.
+*   **Tiers & Costs:**
+    *   **Common:** 500 pts
+    *   **Rare:** 2000 pts
+    *   **Epic:** 3000 pts
+    *   **Legendary:** 4000 pts
+    *   **Mythic:** 5000 pts
+    *   **Ultimate:** 6000 pts
+
 ## 3. Visuals
 
 - **Neon Glow:** Uses `ctx.shadowBlur` and `ctx.shadowColor`.
