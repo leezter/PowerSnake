@@ -2740,7 +2740,7 @@ function checkBoosts() {
                     }
 
                     if (shouldChangeStyle) {
-                        snake.currentBoostStyle = Math.floor(Math.random() * 11);
+                        snake.currentBoostStyle = Math.floor(Math.random() * 21);
                     }
 
                     // Play the sound (either new style or same as before)
@@ -3819,7 +3819,27 @@ class SoundManager {
             // 9: Industrial (Locrian - Dissonant)
             9: calcScale([1, 17 / 16, 6 / 5, 4 / 3, 64 / 45, 8 / 5, 9 / 5], 110.00), // A2
             // 10: Glitch (Chromatic/Whole Tone - Chaos)
-            10: calcScale([1, 9 / 8, 5 / 4, 45 / 32, 3 / 2, 25 / 16], 261.63)
+            10: calcScale([1, 9 / 8, 5 / 4, 45 / 32, 3 / 2, 25 / 16], 261.63),
+            // 11: Celestial (Major 9th - Heavenly)
+            11: calcScale([1, 9 / 8, 5 / 4, 3 / 2, 15 / 8, 9 / 4], 329.63),
+            // 12: Underworld (Phrygian - Sinister)
+            12: calcScale([1, 16 / 15, 4 / 3, 3 / 2, 8 / 5], 164.81),
+            // 13: Funky (Mixolydian - Groovy)
+            13: calcScale([1, 9 / 8, 5 / 4, 4 / 3, 3 / 2, 5 / 3, 16 / 9], 196.00),
+            // 14: Mystic (Whole Tone - Floating)
+            14: calcScale([1, 9 / 8, 81 / 64, 729 / 512, 6561 / 4096, 59049 / 32768], 261.63),
+            // 15: Cybernetic (Octatonic - Robotic)
+            15: calcScale([1, 9 / 8, 6 / 5, 27 / 20, 36 / 25, 81 / 50], 220.00),
+            // 16: Dreamwave (Lydian 9 - Nostalgic)
+            16: calcScale([1, 9 / 8, 5 / 4, 45 / 32, 3 / 2, 27 / 16, 15 / 8], 246.94),
+            // 17: Frenzy (Chromatic Cluster - Chaos)
+            17: calcScale([1, 17 / 16, 9 / 8, 19 / 16, 5 / 4, 21 / 16, 11 / 8], 261.63),
+            // 18: Ancestral (Minor Pentatonic - Tribal)
+            18: calcScale([1, 6 / 5, 4 / 3, 3 / 2, 9 / 5], 130.81),
+            // 19: Hyperpop (Major Pentatonic - Sugary)
+            19: calcScale([1, 9 / 8, 5 / 4, 3 / 2, 5 / 3], 523.25),
+            // 20: Dissonance (Diminished - Tense)
+            20: calcScale([1, 9 / 8, 6 / 5, 27 / 20, 36 / 25, 81 / 50, 216 / 125, 486 / 250], 196.00)
         };
 
         // Backward compatibility for existing code references if any (though we'll update playCollect)
@@ -3929,7 +3949,8 @@ class SoundManager {
             // NEW: Pick a new Combo Style for this run!
             // 0=Classic, 1=Crystal, 2=Cyber, 3=Bubble, 4=Void, 5=Rave
             // 6=Acid, 7=Deep, 8=Future, 9=Industrial, 10=Glitch
-            this.comboStyle = Math.floor(Math.random() * 11);
+            // 11=Celestial, 12=Underworld, 13=Funky, 14=Mystic, 15=Cybernetic, 16=Dreamwave, 17=Frenzy, 18=Ancestral, 19=Hyperpop, 20=Dissonance
+            this.comboStyle = Math.floor(Math.random() * 21);
         } else {
             // Cap combo at scale length - 1
             const currentScale = this.scales[this.comboStyle] || this.scales[0];
@@ -4134,6 +4155,55 @@ class SoundManager {
 
             // Bitcrush noise
             this.playNoise(0.04, 0.2);
+        } else if (style === 11) {
+            // Celestial
+            this.playTone({ freq: freq, type: 'sine', duration: 0.4, vol: 0.3, attack: 0.1, pan: panVar });
+            this.playTone({ freq: freq * 2, type: 'triangle', duration: 0.2, vol: 0.1, attack: 0.05, pan: -panVar });
+            if (this.combo % 4 === 0) this.playTone({ freq: freq * 4, type: 'sine', duration: 0.5, vol: 0.05, attack: 0.2, pan: 0 });
+        } else if (style === 12) {
+            // Underworld
+            this.playTone({ freq: freq, type: 'sawtooth', duration: 0.3, vol: 0.25, attack: 0.1, decay: 0.2, pan: panVar });
+            this.playTone({ freq: freq * 0.5, type: 'sine', duration: 0.4, vol: 0.3, pan: 0 });
+            if (Math.random() < 0.3) this.playNoise(0.1, 0.1);
+        } else if (style === 13) {
+            // Funky
+            this.playTone({ freq: freq, type: 'square', duration: 0.08, vol: 0.2, pan: panVar });
+            setTimeout(() => this.playTone({ freq: freq * 1.5, type: 'square', duration: 0.05, vol: 0.1, pan: -panVar }), 50);
+            if (this.combo % 2 === 0) this.playTone({ freq: freq * 0.5, type: 'triangle', duration: 0.1, vol: 0.3, slide: 20, pan: 0 });
+        } else if (style === 14) {
+            // Mystic
+            this.playTone({ freq: freq, type: 'sine', duration: 0.5, vol: 0.25, attack: 0.2, slide: 50, pan: panVar });
+            this.playTone({ freq: freq * 1.05, type: 'sine', duration: 0.5, vol: 0.15, attack: 0.2, pan: -panVar });
+        } else if (style === 15) {
+            // Cybernetic
+            this.playTone({ freq: freq, type: 'sawtooth', duration: 0.05, vol: 0.3, detune: this.rnd(-20, 20), pan: panVar });
+            this.playNoise(0.02, 0.2);
+            if (this.combo % 3 === 0) this.playTone({ freq: freq * 2, type: 'square', duration: 0.1, vol: 0.15, slide: -100, pan: 0 });
+        } else if (style === 16) {
+            // Dreamwave
+            this.playTone({ freq: freq, type: 'triangle', duration: 0.3, vol: 0.2, attack: 0.05, pan: panVar });
+            setTimeout(() => this.playTone({ freq: freq * 1.5, type: 'sine', duration: 0.6, vol: 0.1, attack: 0.1, pan: -panVar }), 100);
+            this.playTone({ freq: freq * 0.5, type: 'sawtooth', duration: 0.3, vol: 0.1, attack: 0.05, pan: 0 });
+        } else if (style === 17) {
+            // Frenzy
+            this.playTone({ freq: freq, type: 'square', duration: 0.1, vol: 0.25, slide: this.rnd(-300, 300), pan: panVar });
+            this.playTone({ freq: freq * this.rnd(0.8, 1.2), type: 'sawtooth', duration: 0.1, vol: 0.2, pan: -panVar });
+            this.playNoise(0.05, 0.15);
+        } else if (style === 18) {
+            // Ancestral
+            this.playTone({ freq: freq, type: 'triangle', duration: 0.2, vol: 0.4, attack: 0.01, decay: 0.1, pan: 0 });
+            if (this.combo % 2 === 0) this.playNoise(0.1, 0.2); // Drum hit
+            this.playTone({ freq: freq * 2, type: 'sine', duration: 0.1, vol: 0.2, pan: panVar });
+        } else if (style === 19) {
+            // Hyperpop
+            this.playTone({ freq: freq, type: 'square', duration: 0.1, vol: 0.2, slide: 500, pan: panVar });
+            this.playTone({ freq: freq * 1.5, type: 'sine', duration: 0.15, vol: 0.15, pan: -panVar });
+            this.playTone({ freq: 100, type: 'sawtooth', duration: 0.1, vol: 0.2, slide: -50, pan: 0 }); // Punchy bass
+        } else if (style === 20) {
+            // Dissonance
+            this.playTone({ freq: freq, type: 'sawtooth', duration: 0.2, vol: 0.2, detune: -10, pan: -0.2 });
+            this.playTone({ freq: freq * 1.06, type: 'sawtooth', duration: 0.2, vol: 0.2, detune: 10, pan: 0.2 });
+            this.playTone({ freq: freq * 0.5, type: 'square', duration: 0.3, vol: 0.15, pan: 0 });
         }
 
         // Common Reward/Bass Logic for high combos (scaled by style)
@@ -4150,7 +4220,7 @@ class SoundManager {
         if (forceStyle !== -1) {
             this.currentBoostStyle = forceStyle;
         } else {
-            this.currentBoostStyle = Math.floor(Math.random() * 11);
+            this.currentBoostStyle = Math.floor(Math.random() * 21);
         }
         const variant = this.currentBoostStyle;
 
@@ -4246,12 +4316,63 @@ class SoundManager {
                 }, i * 30);
             }
             this.playTone({ freq: 100, type: 'sine', duration: 0.5, vol: 0.4, slide: 100 });
+        } else if (variant === 11) {
+            // VORTEX (Swirling, phased)
+            this.playTone({ freq: 200, type: 'sine', duration: 0.5, vol: 0.4, slide: -50, attack: 0.1, pan: panVar });
+            this.playTone({ freq: 205, type: 'sine', duration: 0.5, vol: 0.4, slide: -45, attack: 0.1, pan: -panVar });
+            this.playNoise(0.3, 0.2);
+        } else if (variant === 12) {
+            // LASER (Pew pew)
+            this.playTone({ freq: 1500, type: 'sawtooth', duration: 0.2, vol: 0.3, slide: -1000, attack: 0.01, pan: panVar });
+            setTimeout(() => this.playTone({ freq: 1200, type: 'square', duration: 0.2, vol: 0.2, slide: -800, pan: -panVar }), 50);
+        } else if (variant === 13) {
+            // METEOR (Deep impact with trail)
+            this.playTone({ freq: 80, type: 'square', duration: 0.4, vol: 0.5, slide: -30, attack: 0.05, pan: 0 });
+            this.playNoise(0.6, 0.3);
+            this.playTone({ freq: 400, type: 'triangle', duration: 0.6, vol: 0.2, slide: -200, pan: panVar });
+        } else if (variant === 14) {
+            // PULSAR (Rhythmic beating)
+            for (let i = 0; i < 4; i++) {
+                setTimeout(() => this.playTone({ freq: 300, type: 'sawtooth', duration: 0.1, vol: 0.3, pan: panVar }), i * 100);
+            }
+            this.playTone({ freq: 100, type: 'sine', duration: 0.5, vol: 0.4, slide: 50, pan: 0 });
+        } else if (variant === 15) {
+            // GHOST RIDE (Eerie wail)
+            this.playTone({ freq: 600, type: 'sine', duration: 0.8, vol: 0.3, slide: 200, attack: 0.3, pan: panVar });
+            this.playTone({ freq: 610, type: 'triangle', duration: 0.8, vol: 0.2, slide: 190, attack: 0.3, pan: -panVar });
+        } else if (variant === 16) {
+            // STAMPEDE (Multiple low thuds)
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => this.playTone({ freq: 60 + this.rnd(-10, 10), type: 'square', duration: 0.1, vol: 0.4, slide: -20, pan: this.rnd(-0.5, 0.5) }), i * 80);
+            }
+        } else if (variant === 17) {
+            // SUB-ZERO (Glassy, icy)
+            this.playTone({ freq: 2000, type: 'triangle', duration: 0.3, vol: 0.2, attack: 0.05, pan: panVar });
+            this.playTone({ freq: 3000, type: 'sine', duration: 0.4, vol: 0.1, slide: 500, pan: -panVar });
+            this.playNoise(0.2, 0.1);
+        } else if (variant === 18) {
+            // INFERNO (Roaring fire)
+            this.playNoise(0.7, 0.4); // Fire roar
+            this.playTone({ freq: 120, type: 'sawtooth', duration: 0.7, vol: 0.3, detune: 15, pan: panVar });
+            this.playTone({ freq: 115, type: 'sawtooth', duration: 0.7, vol: 0.3, detune: -15, pan: -panVar });
+        } else if (variant === 19) {
+            // MECH (Metallic clanks)
+            this.playTone({ freq: 400, type: 'square', duration: 0.15, vol: 0.4, detune: this.rnd(-50, 50), pan: panVar });
+            setTimeout(() => this.playTone({ freq: 300, type: 'square', duration: 0.1, vol: 0.3, detune: this.rnd(-50, 50), pan: -panVar }), 100);
+            this.playTone({ freq: 80, type: 'sawtooth', duration: 0.3, vol: 0.5, slide: -20, pan: 0 });
+        } else if (variant === 20) {
+            // SINGULARITY (Extreme suck)
+            this.playTone({ freq: 50, type: 'sine', duration: 0.6, vol: 0.6, slide: 800, attack: 0.1, pan: 0 });
+            this.playNoise(0.5, 0.2);
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => this.playTone({ freq: 1000 + i * 500, type: 'triangle', duration: 0.1, vol: 0.2, pan: panVar }), i * 150);
+            }
         }
     }
 
     playKill() {
         if (!this.ctx) return;
-        const variant = Math.floor(Math.random() * 11);
+        const variant = Math.floor(Math.random() * 21);
         const t = this.ctx.currentTime;
 
         // --- VARIANT 0: BASSCANNON (Classic Dubstep Drop) ---
@@ -4351,12 +4472,71 @@ class SoundManager {
                 setTimeout(() => this.playTone({ freq: f, type: 'sine', duration: 0.3, vol: 0.3, decay: 0.1 }), i * 150);
             });
             setTimeout(() => this.playTone({ freq: 100, type: 'square', duration: 0.5, vol: 0.4, slide: -80 }), 600);
+        } else if (variant === 11) {
+            // JUDGEMENT (Choir hit)
+            this.playTone({ freq: 300, type: 'triangle', duration: 1.0, vol: 0.5, slide: -50, pan: 0 });
+            this.playTone({ freq: 450, type: 'triangle', duration: 1.0, vol: 0.4, slide: -50, pan: -0.2 });
+            this.playTone({ freq: 600, type: 'triangle', duration: 1.0, vol: 0.4, slide: -50, pan: 0.2 });
+        } else if (variant === 12) {
+            // SNIPER (Sharp crack)
+            this.playNoise(0.05, 0.8);
+            this.playTone({ freq: 2000, type: 'square', duration: 0.1, vol: 0.5, slide: -1500, pan: 0 });
+            setTimeout(() => this.playTone({ freq: 60, type: 'sine', duration: 0.4, vol: 0.4, slide: -20, attack: 0.05 }), 100);
+        } else if (variant === 13) {
+            // VENOM (Acid sizzle)
+            this.playNoise(0.8, 0.4);
+            this.playTone({ freq: 800, type: 'sawtooth', duration: 0.8, vol: 0.3, slide: -400, detune: 20 });
+            this.playTone({ freq: 805, type: 'sawtooth', duration: 0.8, vol: 0.3, slide: -400, detune: -20 });
+        } else if (variant === 14) {
+            // OBLITERATION (White noise explosion)
+            this.playNoise(1.0, 0.7);
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => this.playTone({ freq: this.rnd(50, 200), type: 'square', duration: 0.1, vol: 0.3, pan: this.rnd(-0.5, 0.5) }), i * 50);
+            }
+        } else if (variant === 15) {
+            // SOUL STEAL (Pitch bend up)
+            this.playTone({ freq: 150, type: 'sine', duration: 0.8, vol: 0.5, slide: 800, attack: 0.1 });
+            this.playTone({ freq: 300, type: 'sine', duration: 0.8, vol: 0.3, slide: 1600, attack: 0.1 });
+        } else if (variant === 16) {
+            // ANNIHILATION (Multiple bass bombs)
+            [0, 150, 300].forEach((t, i) => {
+                setTimeout(() => {
+                    this.playTone({ freq: 100 - (i * 20), type: 'square', duration: 0.3, vol: 0.6, slide: -40 });
+                    this.playNoise(0.1, 0.4);
+                }, t);
+            });
+        } else if (variant === 17) {
+            // EXECUTION (Guillotine snick)
+            this.playTone({ freq: 4000, type: 'sawtooth', duration: 0.05, vol: 0.3, pan: 0 });
+            setTimeout(() => this.playNoise(0.1, 0.8), 50);
+            setTimeout(() => this.playTone({ freq: 40, type: 'sine', duration: 0.5, vol: 0.6, attack: 0.01 }), 100);
+        } else if (variant === 18) {
+            // BANISHMENT (Low drone fading)
+            this.playTone({ freq: 60, type: 'sawtooth', duration: 2.0, vol: 0.6, slide: -30, attack: 0.01 });
+            this.playNoise(2.0, 0.2);
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => this.playTone({ freq: 1000, type: 'triangle', duration: 0.1, vol: 0.1 }), i * 300);
+            }
+        } else if (variant === 19) {
+            // SHREDDER (Sawtooth rips)
+            for (let i = 0; i < 6; i++) {
+                setTimeout(() => {
+                    this.playTone({ freq: 200, type: 'sawtooth', duration: 0.1, vol: 0.4, slide: 100, pan: (i % 2 ? 0.3 : -0.3) });
+                }, i * 40);
+            }
+            setTimeout(() => this.playTone({ freq: 50, type: 'sine', duration: 0.5, vol: 0.5, slide: -20 }), 240);
+        } else if (variant === 20) {
+            // TRIUMPH (Major chord hit)
+            [1, 1.25, 1.5].forEach(r => {
+                this.playTone({ freq: 261.63 * r, type: 'sawtooth', duration: 0.8, vol: 0.3, attack: 0.05 });
+            });
+            this.playNoise(0.4, 0.3);
         }
     }
 
     playDie() {
         if (!this.ctx) return;
-        const variant = Math.floor(Math.random() * 11);
+        const variant = Math.floor(Math.random() * 21);
         const t = this.ctx.currentTime;
 
         // --- VARIANT 0: SYSTEM FAILURE (Original) ---
@@ -4446,12 +4626,58 @@ class SoundManager {
             [800, 700, 600, 500, 400, 300, 200].forEach((f, i) => {
                 setTimeout(() => this.playTone({ freq: f, type: 'triangle', duration: 0.1, vol: 0.3 }), i * 100);
             });
+        } else if (variant === 11) {
+            // DESPAIR (Minor fall)
+            [800, 672, 600, 480].forEach((f, i) => {
+                setTimeout(() => this.playTone({ freq: f, type: 'sine', duration: 0.4, vol: 0.4 }), i * 200);
+            });
+        } else if (variant === 12) {
+            // MELTDOWN (Rising siren then stop)
+            this.playTone({ freq: 400, type: 'square', duration: 1.0, vol: 0.3, slide: 800 });
+            setTimeout(() => this.playTone({ freq: 50, type: 'sawtooth', duration: 0.4, vol: 0.5, slide: -20 }), 1000);
+        } else if (variant === 13) {
+            // EVAPORATE (High noise fade)
+            this.playNoise(1.5, 0.5);
+            this.playTone({ freq: 3000, type: 'sine', duration: 1.5, vol: 0.2, slide: 1000 });
+        } else if (variant === 14) {
+            // FRACTURE (Staggered breaks)
+            [0, 150, 400, 700].forEach(t => {
+                setTimeout(() => this.playNoise(0.05, 0.6), t);
+            });
+        } else if (variant === 15) {
+            // SUFFOCATE (Muffled thuds)
+            [0, 300, 600].forEach(t => {
+                setTimeout(() => this.playTone({ freq: 100, type: 'sine', duration: 0.3, vol: 0.6, slide: -50 }), t);
+            });
+        } else if (variant === 16) {
+            // WITHER (Slowly losing pitch)
+            this.playTone({ freq: 440, type: 'sawtooth', duration: 2.5, vol: 0.3, slide: -400 });
+            this.playTone({ freq: 445, type: 'sawtooth', duration: 2.5, vol: 0.3, slide: -405 });
+        } else if (variant === 17) {
+            // CORRUPT (Rapid random notes)
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => this.playTone({ freq: this.rnd(100, 1000), type: 'square', duration: 0.05, vol: 0.2 }), i * 40);
+            }
+        } else if (variant === 18) {
+            // ECHOES (Delay taps fading)
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => this.playTone({ freq: 200, type: 'triangle', duration: 0.1, vol: 0.4 * (1 - i / 5) }), i * 250);
+            }
+        } else if (variant === 19) {
+            // IMPALE (Sharp spike then groan)
+            this.playTone({ freq: 2000, type: 'sawtooth', duration: 0.1, vol: 0.3, slide: -1500 });
+            setTimeout(() => this.playTone({ freq: 60, type: 'sine', duration: 1.0, vol: 0.5, attack: 0.1 }), 100);
+        } else if (variant === 20) {
+            // ACCEPTANCE (Peaceful major fade)
+            this.playTone({ freq: 261.63, type: 'sine', duration: 2.0, vol: 0.3, decay: 1.0 }); // C
+            this.playTone({ freq: 329.63, type: 'sine', duration: 2.0, vol: 0.3, decay: 1.0 }); // E
+            this.playTone({ freq: 392.00, type: 'sine', duration: 2.0, vol: 0.3, decay: 1.0 }); // G
         }
     }
 
     playStart() {
         if (!this.ctx) return;
-        const variant = Math.floor(Math.random() * 11);
+        const variant = Math.floor(Math.random() * 21);
 
         // --- VARIANT 0: CINEMATIC RISER ---
         if (variant === 0) {
@@ -4546,6 +4772,66 @@ class SoundManager {
         } else if (variant === 10) {
             this.playTone({ freq: 180, type: 'sine', duration: 3.0, vol: 0.5, attack: 0.05, decay: 2.0, detune: 10 }); // Pseudo gong
             this.playNoise(1.0, 0.1);
+        } else if (variant === 11) {
+            // ASCENSION (Major arpeggio up)
+            [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+                setTimeout(() => this.playTone({ freq: f, type: 'triangle', duration: 0.4, vol: 0.2, attack: 0.05 }), i * 150);
+            });
+            setTimeout(() => this.playNoise(1.0, 0.1), 1000);
+        } else if (variant === 12) {
+            // WAKE UP (Alarm sequence)
+            for (let i = 0; i < 4; i++) {
+                setTimeout(() => this.playTone({ freq: 800, type: 'square', duration: 0.1, vol: 0.3, pan: (i % 2 ? 0.5 : -0.5) }), i * 200);
+            }
+            setTimeout(() => this.playTone({ freq: 400, type: 'sawtooth', duration: 1.0, vol: 0.4, slide: 400 }), 800);
+        } else if (variant === 13) {
+            // NEURAL LINK (Dial-upish rapid tones)
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => this.playTone({ freq: this.rnd(500, 3000), type: 'square', duration: 0.05, vol: 0.15, pan: this.rnd(-0.5, 0.5) }), i * 40);
+            }
+            setTimeout(() => this.playTone({ freq: 880, type: 'sine', duration: 1.0, vol: 0.3, attack: 0.1 }), 800);
+        } else if (variant === 14) {
+            // BEHEMOTH (Massive low groan evolving)
+            this.playTone({ freq: 40, type: 'sawtooth', duration: 2.0, vol: 0.5, slide: 30, attack: 1.0 });
+            this.playTone({ freq: 41, type: 'sawtooth', duration: 2.0, vol: 0.5, slide: 31, attack: 1.0 });
+            setTimeout(() => this.playNoise(0.5, 0.4), 1800);
+        } else if (variant === 15) {
+            // VELOCITY (Fast wind up)
+            this.playNoise(1.5, 0.3);
+            this.playTone({ freq: 100, type: 'triangle', duration: 1.2, vol: 0.4, slide: 2000, attack: 0.2 });
+            setTimeout(() => this.playTone({ freq: 2000, type: 'sine', duration: 0.5, vol: 0.2, decay: 0.2 }), 1200);
+        } else if (variant === 16) {
+            // HARMONY (Rich chords)
+            this.playTone({ freq: 220, type: 'sawtooth', duration: 2.0, vol: 0.2, attack: 0.5 });
+            this.playTone({ freq: 277.18, type: 'sawtooth', duration: 2.0, vol: 0.2, attack: 0.5 }); // C#
+            this.playTone({ freq: 329.63, type: 'sawtooth', duration: 2.0, vol: 0.2, attack: 0.5 }); // E
+            this.playTone({ freq: 440, type: 'sawtooth', duration: 2.0, vol: 0.2, attack: 0.5 }); // A
+        } else if (variant === 17) {
+            // GLITCH BOOT (Stuttering start)
+            [0, 50, 150, 200, 350, 400, 600].forEach(t => {
+                setTimeout(() => this.playTone({ freq: 150, type: 'square', duration: 0.05, vol: 0.4 }), t);
+            });
+            setTimeout(() => this.playTone({ freq: 150, type: 'sawtooth', duration: 1.0, vol: 0.4, slide: 150 }), 650);
+        } else if (variant === 18) {
+            // SONAR (Deep pings)
+            this.playTone({ freq: 800, type: 'sine', duration: 0.5, vol: 0.4, attack: 0.01, decay: 0.3 });
+            setTimeout(() => this.playTone({ freq: 800, type: 'sine', duration: 0.5, vol: 0.3, attack: 0.01, decay: 0.3, pan: 0.5 }), 600);
+            setTimeout(() => this.playTone({ freq: 800, type: 'sine', duration: 0.5, vol: 0.2, attack: 0.01, decay: 0.3, pan: -0.5 }), 1200);
+        } else if (variant === 19) {
+            // OVERCHARGE (Rising noise and pitch)
+            this.playNoise(2.0, 0.5); // Gets loud
+            this.playTone({ freq: 50, type: 'square', duration: 2.0, vol: 0.4, slide: 400, attack: 0.5 });
+            setTimeout(() => this.playTone({ freq: 450, type: 'sine', duration: 0.5, vol: 0.5, attack: 0.01 }), 2000); // Bloom
+        } else if (variant === 20) {
+            // EUPHORIA (Fast Lydian run)
+            [261.63, 293.66, 329.63, 370.00, 392.00, 440.00, 493.88, 523.25].forEach((f, i) => {
+                setTimeout(() => this.playTone({ freq: f, type: 'triangle', duration: 0.2, vol: 0.25 }), i * 100);
+            });
+            setTimeout(() => {
+                this.playTone({ freq: 523.25, type: 'sine', duration: 1.5, vol: 0.3, attack: 0.1 });
+                this.playTone({ freq: 659.25, type: 'sine', duration: 1.5, vol: 0.2, attack: 0.1 }); // E
+                this.playTone({ freq: 783.99, type: 'sine', duration: 1.5, vol: 0.2, attack: 0.1 }); // G
+            }, 800);
         }
     }
 
@@ -4565,16 +4851,16 @@ class SoundManager {
             if (this.boostNodes.humOsc1) {
                 // Default: Sawtooth
                 let type = 'sawtooth';
-                if (style === 1 || style === 5 || style === 7 || style === 10) type = 'sine'; // Warp, Sonic, Nebula, Quantum
-                if (style === 4 || style === 6 || style === 9) type = 'square'; // Cyber, Plasma, Slipstream
-                if (style === 8) type = 'sawtooth'; // Overdrive
+                if (style === 1 || style === 5 || style === 7 || style === 10 || style === 11 || style === 14 || style === 15 || style === 20) type = 'sine'; // Warp, Sonic, Nebula, Quantum, Vortex, Pulsar, Ghost, Singularity
+                if (style === 4 || style === 6 || style === 9 || style === 12 || style === 13 || style === 16 || style === 19) type = 'square'; // Cyber, Plasma, Slipstream, Laser, Meteor, Stampede, Mech
+                if (style === 8 || style === 17 || style === 18) type = 'sawtooth'; // Overdrive, Sub-Zero, Inferno
 
                 this.boostNodes.humOsc1.type = type;
                 this.boostNodes.humOsc2.type = type;
 
                 // LFO Type
-                const sawLFO = [4, 6, 8];
-                const squareLFO = [0, 2, 9];
+                const sawLFO = [4, 6, 8, 12, 18, 19];
+                const squareLFO = [0, 2, 9, 13, 16];
                 if (sawLFO.includes(style)) {
                     this.boostNodes.crackleLFO.type = 'sawtooth';
                 } else if (squareLFO.includes(style)) {
@@ -4692,6 +4978,76 @@ class SoundManager {
                 this.boostNodes.humOsc2.frequency.setTargetAtTime(strain * 2, now, 0.05);
                 this.boostNodes.crackleFilter.frequency.setTargetAtTime(2000, now, 0.1);
                 this.boostNodes.crackleLFO.frequency.setTargetAtTime(Math.random() * 50, now, 0.1);
+            } else if (style === 11) {
+                // VORTEX
+                const strain = 150 + (intensity * 150);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.2);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain * 1.05, now, 0.2);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(800 + intensity * 800, now, 0.2);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(5, now, 0.1);
+            } else if (style === 12) {
+                // LASER
+                const strain = 800 + (intensity * 800);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.05);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain + 10, now, 0.05);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(1500, now, 0.1);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(20 + intensity * 40, now, 0.1);
+            } else if (style === 13) {
+                // METEOR
+                const strain = 60 + (intensity * 40);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.5);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain + 5, now, 0.5);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(400, now, 0.5);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(10, now, 0.5);
+            } else if (style === 14) {
+                // PULSAR
+                const strain = 100 + (intensity * 100);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.1);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain * 1.5, now, 0.1);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(1000 + intensity * 1000, now, 0.1);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(8 + intensity * 8, now, 0.1);
+            } else if (style === 15) {
+                // GHOST
+                const strain = 400 + (intensity * 200);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 1.0);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain + 2, now, 1.0);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(2000, now, 1.0);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(3, now, 1.0);
+            } else if (style === 16) {
+                // STAMPEDE
+                const strain = 50 + (intensity * 30);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.1);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain * 1.1, now, 0.1);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(300, now, 0.1);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(15 + intensity * 15, now, 0.1);
+            } else if (style === 17) {
+                // SUB-ZERO
+                const strain = 2000 + (intensity * 1000);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.2);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain * 1.02, now, 0.2);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(3000, now, 0.2);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(30, now, 0.2);
+            } else if (style === 18) {
+                // INFERNO
+                const strain = 80 + (intensity * 80);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.3);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain + 15, now, 0.3);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(800 + intensity * 800, now, 0.3);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(10 + intensity * 20, now, 0.3);
+            } else if (style === 19) {
+                // MECH
+                const strain = 150 + (intensity * 250);
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(strain, now, 0.1);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(strain * 0.5, now, 0.1);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(1000, now, 0.1);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(50, now, 0.1);
+            } else if (style === 20) {
+                // SINGULARITY
+                const strain = 100 - (intensity * 60); // Pitch goes DOWN as intensity increases
+                this.boostNodes.humOsc1.frequency.setTargetAtTime(Math.max(20, strain), now, 0.5);
+                this.boostNodes.humOsc2.frequency.setTargetAtTime(Math.max(21, strain + 1), now, 0.5);
+                this.boostNodes.crackleFilter.frequency.setTargetAtTime(5000 - intensity * 4000, now, 0.5);
+                this.boostNodes.crackleLFO.frequency.setTargetAtTime(1 + intensity * 9, now, 0.5);
             }
         }
     }
