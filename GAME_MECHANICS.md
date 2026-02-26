@@ -159,39 +159,28 @@ The game uses a **responsive scaling system** to prevent the arena from being cr
 - **Mobile blend factor:** The `0.5` blend in `(rawScale + 1.0) / 2` can be adjusted. A value closer to `rawScale` zooms out more (more visibility, smaller objects); closer to `1.0` zooms in more (less visibility, larger objects).
 
 ### 3.1 Snake Styles (`SNAKE_STYLES`)
-The game features **25 unique visual styles**, each with distinct rendering logic (`renderBody`, `renderHead`) and behavioral updates (`update`) for particle effects.
+The game features **76 unique visual styles**, categorized heavily across rarity tiers (Common -> Ultimate). Each has distinct rendering logic (`renderBody`, `renderHead`) and behavioral updates (`update`) for customized particle physics and geometry.
 
 **Rendering Architecture:**
 - **Body:** Custom loop in `renderBody` handles diverse shapes (squares, jagged lines, flowing rivers) instead of standard circles.
 - **Head:** Unique geometry per style (eyes, crests, glowing cores).
 - **Particles:** Styles like *Inferno*, *Vampire*, and *Frost* spawn thematic particles (embers, sparkles) during the `update` loop.
 
-**Style List:**
-1.  **CYBER:** Standard neon blue/magenta.
-2.  **INFERNO:** Fiery body with jitter and ember particles.
-3.  **VOID:** Dark purple with event horizon glow.
-4.  **GLITCH:** Digital artifacts and square segments.
-5.  **PLASMA:** Pulsing energy width.
-6.  **MIDAS:** Solid gold with metallic sheen.
-7.  **TOXIN:** Bubbling dashed lines.
-8.  **PRISM:** Cycling RGB spectrum.
-9.  **GHOST:** Semi-transparent stealth.
-10. **CIRCUIT:** Wireframe/microchip aesthetic.
-11. **RADIUM:** Radioactive rings.
-12. **COSMOS:** Deep blue with parallax stars.
-13. **VAMPIRE:** Bat-wing segments and blood particles.
-14. **PIXEL:** Retro raw pixels with debris.
-15. **CANDY:** Pink/blue stripes.
-16. **MAGMA:** Crusted lava with fire particles.
-17. **FROST:** Ice shards with sparkles.
-18. **VOLTAIC:** Lightning bolt with sparks.
-19. **AZURE:** Flowing river effect.
-20. **VERDANT:** Organic vine with leaves.
-21. **CHROME:** Metallic reflection.
-22. **SKETCH:** Hand-drawn white pencil.
-23. **SPECTRUM:** Rainbow trail.
-24. **MATRIX:** Falling binary code.
-25. **SAMURAI:** Plated armor with crest.
+**Rarity Distribution:**
+To induce a steady sense of progression, the 76 snakes are grouped into distinct rarity tiers that must be sequentially unlocked. Advanced rarities feature increasingly complex WebGL/Canvas shading techniques, distinct line caps/joins, custom head geometries (e.g., star polygons, event horizons), and thematic particle emitters.
+1. **Starter (3)**: e.g., Cyber, Inferno, Void
+2. **Common (18)**: e.g., Glitch, Plasma, Echo, Wireframe, Spore
+3. **Rare (18)**: e.g., Pixel, Cosmos, Liquid Metal, Hologram, Crystal
+4. **Epic (16)**: e.g., Samurai, Vaporwave, Dragon, Abyss, Stardust
+5. **Legendary (12)**: e.g., Laser, Bamboo, Supernova, Phantom, Demon
+6. **Mythic (6)**: e.g., Cheese, Stone, Singularity, Radiance
+7. **Ultimate (3)**: Jelly, Retro, Omni
+
+**How to Add New Snakes (Save-safe approach):**
+To ensure existing player save data is not broken when introducing new snakes, you must adhere to the following sequence in `game.js`:
+1. **Append to `SNAKE_STYLES`**: Add the new snake objects to the *end* of the `SNAKE_STYLES` array. Do not insert them into the middle, as player save files strictly store integers representing array indices.
+2. **Append to `SNAKE_TIER_MAP`**: Append the correct rarity tier index (e.g., `1` for Common, `5` for Mythic) to the *end* of the `SNAKE_TIER_MAP` array so the game knows how much the new snake costs.
+3. **Insert into `UNLOCK_ORDER`**: Manually place the new snake indices into the `UNLOCK_ORDER` array, grouped within their appropriate rarity blocks. This ensures they show up correctly grouped by rarity in the UI and unlock sequentially as intended for both new and returning players.
 
 ## 4. Key Constants to Tune
 
