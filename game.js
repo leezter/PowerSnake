@@ -4905,7 +4905,7 @@ function updateLeaderboard() {
         if (isPlayerEntry) classes += ' is-player';
         if (isKing) classes += ' is-king';
 
-        const crown = isKing ? '<span class="lb-crown">ðŸ‘‘</span>' : '';
+        const crown = isKing ? '<span class="lb-crown">&#128081;</span>' : '';
         html += `
             <div class="${classes}" style="color: ${isPlayerEntry ? s.color : ''}">
                 <span class="lb-rank">${i + 1}</span>
@@ -7060,7 +7060,10 @@ function selectSnake(index, cardEl) {
     // Update UI
     const cards = snakeGrid.children;
     for (let i = 0; i < cards.length; i++) {
-        cards[i].classList.toggle('selected', i === index);
+        cards[i].classList.remove('selected');
+    }
+    if (cardEl) {
+        cardEl.classList.add('selected');
     }
 
     // Play selection sound
