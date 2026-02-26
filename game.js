@@ -3,11 +3,11 @@
    ============================================ */
 
 // ---- Constants ----
-const ARENA_SIZE = 6000;
+const ARENA_SIZE = 4500;
 const GRID_SIZE = 40;
 const BASE_SPEED = 3.2;
 const BOOST_SPEED = 11.6;
-const MAX_SPEED_CAP = 14.0; // Overall speed boost cap
+const MAX_SPEED_CAP = 12.0; // Overall speed boost cap
 const BOOST_PROXIMITY = 60;
 const BOOST_RAMP_DURATION = 6.0; // seconds to reach full boost speed
 const MAGNET_DISTANCE = 75;
