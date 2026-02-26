@@ -7,6 +7,7 @@ const ARENA_SIZE = 6000;
 const GRID_SIZE = 40;
 const BASE_SPEED = 3.2;
 const BOOST_SPEED = 11.6;
+const MAX_SPEED_CAP = 14.0; // Overall speed boost cap
 const BOOST_PROXIMITY = 60;
 const BOOST_RAMP_DURATION = 6.0; // seconds to reach full boost speed
 const MAGNET_DISTANCE = 75;
@@ -3670,7 +3671,10 @@ class Snake {
 
         // Speed: base + ramped boost
         const boostExtra = (currentBoostSpeed - currentBaseSpeed) * this.boostIntensity;
-        const targetSpeed = currentBaseSpeed + boostExtra;
+        let targetSpeed = currentBaseSpeed + boostExtra;
+
+        // Apply overall speed cap to prevent combined boosts going too fast
+        targetSpeed = Math.min(targetSpeed, MAX_SPEED_CAP);
 
         // Longer snakes are slightly slower (length penalty still applies)
         const lengthPenalty = Math.max(0, (this.segments.length - 30) * 0.003);
