@@ -95,11 +95,11 @@ The game features a high-stakes progression system where players unlock new snak
 *   **Hardcore Rule:** Progress towards the *next* unlock is **reset to 0** upon death. Players must earn the full cost of the next snake in a **single life** to unlock it.
 *   **Tiers & Costs:**
     *   **Common:** 500 pts
-    *   **Rare:** 2000 pts
-    *   **Epic:** 3000 pts
-    *   **Legendary:** 4000 pts
-    *   **Mythic:** 5000 pts
-    *   **Ultimate:** 6000 pts
+    *   **Rare:** 1000 pts
+    *   **Epic:** 1500 pts
+    *   **Legendary:** 2000 pts
+    *   **Mythic:** 3000 pts
+    *   **Ultimate:** 4000 pts
 
 ## 3. Visuals
 

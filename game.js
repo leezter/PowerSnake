@@ -3387,11 +3387,11 @@ const BOT_NAMES = SNAKE_STYLES.map(s => s.name);
 const UNLOCK_TIERS = [
     { label: 'STARTER', cost: 0, color: '#ffffff' },
     { label: 'COMMON', cost: 500, color: '#55ff55' },
-    { label: 'RARE', cost: 2000, color: '#00aaff' },
-    { label: 'EPIC', cost: 3000, color: '#aa55ff' },
-    { label: 'LEGENDARY', cost: 4000, color: '#ffaa00' },
-    { label: 'MYTHIC', cost: 5000, color: '#ff3355' },
-    { label: 'ULTIMATE', cost: 6000, color: '#ff00ff' },
+    { label: 'RARE', cost: 1000, color: '#00aaff' },
+    { label: 'EPIC', cost: 1500, color: '#aa55ff' },
+    { label: 'LEGENDARY', cost: 2000, color: '#ffaa00' },
+    { label: 'MYTHIC', cost: 3000, color: '#ff3355' },
+    { label: 'ULTIMATE', cost: 4000, color: '#ff00ff' },
 ];
 
 // Map each snake index to its tier index
