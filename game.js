@@ -3791,7 +3791,7 @@ class Snake {
                         if (dot / (preciseDist + 1) > 0.5) {
                             // Score ~ Value / Dist (emphasize close food)
                             // Emphasize CLUSTERS by summing
-                            score += (f.value * 220) / (preciseDist + 10);
+                            score += (f.value * FOOD_WEIGHT * 80) / (preciseDist + 10);
                         }
                     }
                 }
