@@ -4554,7 +4554,8 @@ function render() {
     ctx.translate(-camera.x, -camera.y);
 
     // Draw nebula background (world-space, only visible tiles)
-    if (nebulaCanvas) {
+    // Skipped on low quality — the base gradient is already good enough
+    if (nebulaCanvas && !lowQuality) {
         ctx.save();
         ctx.globalAlpha = 0.6;
         // Calculate visible bounds
@@ -4580,20 +4581,38 @@ function render() {
     }
 
     // Animated ambient glow pools — slow drifting color hotspots
+    // Uses pre-cached gradients rendered via translate to avoid per-frame gradient creation
     if (!lowQuality) {
         const glowTime = performance.now() / 4000;
         const gHalfW = (w / 2) / (camera.zoom * screenScale);
         const gHalfH = (h / 2) / (camera.zoom * screenScale);
-        const glowPools = [
-            { bx: 0.15, by: 0.25, r: 450, color: [0, 100, 180], speed: 0.7 },
-            { bx: 0.65, by: 0.15, r: 400, color: [80, 30, 120], speed: 0.9 },
-            { bx: 0.4, by: 0.55, r: 500, color: [10, 90, 90], speed: 0.5 },
-            { bx: 0.85, by: 0.7, r: 380, color: [60, 20, 100], speed: 1.1 },
-            { bx: 0.3, by: 0.8, r: 420, color: [20, 70, 130], speed: 0.6 },
-            { bx: 0.75, by: 0.45, r: 360, color: [50, 10, 80], speed: 0.8 },
-        ];
 
-        for (const gp of glowPools) {
+        // Initialize cached glow pool canvases once
+        if (!render._glowPoolCache) {
+            render._glowPoolCache = [
+                { bx: 0.15, by: 0.25, r: 450, color: [0, 100, 180], speed: 0.7 },
+                { bx: 0.65, by: 0.15, r: 400, color: [80, 30, 120], speed: 0.9 },
+                { bx: 0.4, by: 0.55, r: 500, color: [10, 90, 90], speed: 0.5 },
+                { bx: 0.85, by: 0.7, r: 380, color: [60, 20, 100], speed: 1.1 },
+                { bx: 0.3, by: 0.8, r: 420, color: [20, 70, 130], speed: 0.6 },
+                { bx: 0.75, by: 0.45, r: 360, color: [50, 10, 80], speed: 0.8 },
+            ].map(gp => {
+                // Pre-render each glow pool to an offscreen canvas
+                const size = gp.r * 2;
+                const c = document.createElement('canvas');
+                c.width = size;
+                c.height = size;
+                const gc = c.getContext('2d');
+                const grad = gc.createRadialGradient(gp.r, gp.r, 0, gp.r, gp.r, gp.r);
+                grad.addColorStop(0, `rgba(${gp.color[0]}, ${gp.color[1]}, ${gp.color[2]}, 1)`);
+                grad.addColorStop(1, 'transparent');
+                gc.fillStyle = grad;
+                gc.fillRect(0, 0, size, size);
+                return { ...gp, canvas: c };
+            });
+        }
+
+        for (const gp of render._glowPoolCache) {
             const cx = gp.bx * ARENA_SIZE + Math.sin(glowTime * gp.speed) * 200;
             const cy = gp.by * ARENA_SIZE + Math.cos(glowTime * gp.speed * 0.7 + 1) * 200;
 
@@ -4603,11 +4622,10 @@ function render() {
 
             const pulse = 0.08 + Math.sin(glowTime * gp.speed * 1.5) * 0.03;
 
-            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, gp.r);
-            grad.addColorStop(0, `rgba(${gp.color[0]}, ${gp.color[1]}, ${gp.color[2]}, ${pulse})`);
-            grad.addColorStop(1, 'transparent');
-            ctx.fillStyle = grad;
-            ctx.fillRect(cx - gp.r, cy - gp.r, gp.r * 2, gp.r * 2);
+            // Draw pre-rendered gradient with animated alpha — much cheaper than creating gradients per frame
+            ctx.globalAlpha = pulse;
+            ctx.drawImage(gp.canvas, cx - gp.r, cy - gp.r);
+            ctx.globalAlpha = 1;
         }
     }
 
