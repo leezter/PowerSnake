@@ -4428,16 +4428,81 @@ function checkBoosts() {
     }
 }
 
+// ---- Nebula Background System ----
+let nebulaCanvas = null;
+let nebulaCtx = null;
+const NEBULA_SIZE = 1024; // Resolution of the nebula texture
+
+function initNebulaCanvas() {
+    nebulaCanvas = document.createElement('canvas');
+    nebulaCanvas.width = NEBULA_SIZE;
+    nebulaCanvas.height = NEBULA_SIZE;
+    nebulaCtx = nebulaCanvas.getContext('2d');
+
+    // Base fill
+    nebulaCtx.fillStyle = '#0d1025';
+    nebulaCtx.fillRect(0, 0, NEBULA_SIZE, NEBULA_SIZE);
+
+    // Paint nebula blobs — soft colored clouds
+    const blobs = [
+        { x: 0.2, y: 0.3, r: 0.35, color: 'rgba(20, 60, 120, 0.35)' },
+        { x: 0.7, y: 0.2, r: 0.3, color: 'rgba(80, 20, 100, 0.25)' },
+        { x: 0.5, y: 0.7, r: 0.4, color: 'rgba(10, 80, 80, 0.25)' },
+        { x: 0.8, y: 0.8, r: 0.25, color: 'rgba(60, 10, 60, 0.3)' },
+        { x: 0.3, y: 0.85, r: 0.3, color: 'rgba(20, 40, 100, 0.2)' },
+        { x: 0.15, y: 0.6, r: 0.2, color: 'rgba(100, 30, 60, 0.2)' },
+        { x: 0.6, y: 0.45, r: 0.28, color: 'rgba(15, 50, 90, 0.3)' },
+        { x: 0.9, y: 0.5, r: 0.22, color: 'rgba(50, 15, 80, 0.25)' },
+    ];
+
+    for (const b of blobs) {
+        const cx = b.x * NEBULA_SIZE;
+        const cy = b.y * NEBULA_SIZE;
+        const radius = b.r * NEBULA_SIZE;
+        const grad = nebulaCtx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        grad.addColorStop(0, b.color);
+        grad.addColorStop(1, 'transparent');
+        nebulaCtx.fillStyle = grad;
+        nebulaCtx.fillRect(0, 0, NEBULA_SIZE, NEBULA_SIZE);
+    }
+
+    // Add subtle star dust
+    nebulaCtx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    for (let i = 0; i < 200; i++) {
+        const sx = Math.random() * NEBULA_SIZE;
+        const sy = Math.random() * NEBULA_SIZE;
+        const sr = Math.random() * 1.2 + 0.3;
+        nebulaCtx.beginPath();
+        nebulaCtx.arc(sx, sy, sr, 0, Math.PI * 2);
+        nebulaCtx.fill();
+    }
+
+    // Brighter stars
+    nebulaCtx.fillStyle = 'rgba(200, 220, 255, 0.4)';
+    for (let i = 0; i < 30; i++) {
+        const sx = Math.random() * NEBULA_SIZE;
+        const sy = Math.random() * NEBULA_SIZE;
+        const sr = Math.random() * 1.8 + 0.5;
+        nebulaCtx.beginPath();
+        nebulaCtx.arc(sx, sy, sr, 0, Math.PI * 2);
+        nebulaCtx.fill();
+    }
+}
+
 // ---- Rendering ----
 function render() {
     const w = canvas.width;
     const h = canvas.height;
 
-    // Dark background with subtle gradient
+    // Initialize nebula once
+    if (!nebulaCanvas) initNebulaCanvas();
+
+    // Rich deep background — brighter than pure black for dark snake visibility
     const maxDim = Math.max(w, h);
-    const gradient = ctx.createRadialGradient(w / 2, h / 2, maxDim / 2, w / 2, h / 2, maxDim);
-    gradient.addColorStop(0, '#0a0a14');
-    gradient.addColorStop(1, '#000000');
+    const gradient = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, maxDim * 0.8);
+    gradient.addColorStop(0, '#0f1428');
+    gradient.addColorStop(0.5, '#0a0e1e');
+    gradient.addColorStop(1, '#060810');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
 
@@ -4488,6 +4553,64 @@ function render() {
     ctx.scale(camera.zoom * screenScale, camera.zoom * screenScale);
     ctx.translate(-camera.x, -camera.y);
 
+    // Draw nebula background (world-space, only visible tiles)
+    if (nebulaCanvas) {
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        // Calculate visible bounds
+        const vHalfW = (w / 2) / (camera.zoom * screenScale);
+        const vHalfH = (h / 2) / (camera.zoom * screenScale);
+        const vLeft = Math.max(0, camera.x - vHalfW - NEBULA_SIZE);
+        const vRight = Math.min(ARENA_SIZE, camera.x + vHalfW + NEBULA_SIZE);
+        const vTop = Math.max(0, camera.y - vHalfH - NEBULA_SIZE);
+        const vBottom = Math.min(ARENA_SIZE, camera.y + vHalfH + NEBULA_SIZE);
+
+        const startTX = Math.floor(vLeft / NEBULA_SIZE);
+        const endTX = Math.ceil(vRight / NEBULA_SIZE);
+        const startTY = Math.floor(vTop / NEBULA_SIZE);
+        const endTY = Math.ceil(vBottom / NEBULA_SIZE);
+
+        for (let tx = startTX; tx < endTX; tx++) {
+            for (let ty = startTY; ty < endTY; ty++) {
+                ctx.drawImage(nebulaCanvas, tx * NEBULA_SIZE, ty * NEBULA_SIZE, NEBULA_SIZE, NEBULA_SIZE);
+            }
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
+    }
+
+    // Animated ambient glow pools — slow drifting color hotspots
+    if (!lowQuality) {
+        const glowTime = performance.now() / 4000;
+        const gHalfW = (w / 2) / (camera.zoom * screenScale);
+        const gHalfH = (h / 2) / (camera.zoom * screenScale);
+        const glowPools = [
+            { bx: 0.15, by: 0.25, r: 450, color: [0, 100, 180], speed: 0.7 },
+            { bx: 0.65, by: 0.15, r: 400, color: [80, 30, 120], speed: 0.9 },
+            { bx: 0.4, by: 0.55, r: 500, color: [10, 90, 90], speed: 0.5 },
+            { bx: 0.85, by: 0.7, r: 380, color: [60, 20, 100], speed: 1.1 },
+            { bx: 0.3, by: 0.8, r: 420, color: [20, 70, 130], speed: 0.6 },
+            { bx: 0.75, by: 0.45, r: 360, color: [50, 10, 80], speed: 0.8 },
+        ];
+
+        for (const gp of glowPools) {
+            const cx = gp.bx * ARENA_SIZE + Math.sin(glowTime * gp.speed) * 200;
+            const cy = gp.by * ARENA_SIZE + Math.cos(glowTime * gp.speed * 0.7 + 1) * 200;
+
+            // Skip if off-screen
+            if (cx + gp.r < camera.x - gHalfW || cx - gp.r > camera.x + gHalfW ||
+                cy + gp.r < camera.y - gHalfH || cy - gp.r > camera.y + gHalfH) continue;
+
+            const pulse = 0.08 + Math.sin(glowTime * gp.speed * 1.5) * 0.03;
+
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, gp.r);
+            grad.addColorStop(0, `rgba(${gp.color[0]}, ${gp.color[1]}, ${gp.color[2]}, ${pulse})`);
+            grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad;
+            ctx.fillRect(cx - gp.r, cy - gp.r, gp.r * 2, gp.r * 2);
+        }
+    }
+
     // Draw grid
     drawGrid();
 
@@ -4515,6 +4638,7 @@ function render() {
 function drawGrid() {
     const w = canvas.width;
     const h = canvas.height;
+    const time = performance.now() / 1000;
 
     // Visible bounds
     const halfW = (w / 2) / (camera.zoom * screenScale);
@@ -4527,8 +4651,7 @@ function drawGrid() {
     const startX = Math.floor(left / GRID_SIZE) * GRID_SIZE;
     const startY = Math.floor(top / GRID_SIZE) * GRID_SIZE;
 
-    ctx.lineWidth = 1;
-
+    // Draw grid lines
     for (let x = startX; x <= right; x += GRID_SIZE) {
         if (x < 0 || x > ARENA_SIZE) continue;
 
@@ -4536,12 +4659,12 @@ function drawGrid() {
         ctx.moveTo(x, Math.max(0, top));
         ctx.lineTo(x, Math.min(ARENA_SIZE, bottom));
 
-        // Major lines every 5 cells
+        // Major lines every 5 cells — brighter cyan
         if (x % (GRID_SIZE * 5) === 0) {
-            ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(0, 200, 255, 0.12)';
+            ctx.lineWidth = 1.5;
         } else {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.strokeStyle = 'rgba(100, 140, 180, 0.06)';
             ctx.lineWidth = 1;
         }
         ctx.stroke();
@@ -4555,13 +4678,36 @@ function drawGrid() {
         ctx.lineTo(Math.min(ARENA_SIZE, right), y);
 
         if (y % (GRID_SIZE * 5) === 0) {
-            ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(0, 200, 255, 0.12)';
+            ctx.lineWidth = 1.5;
         } else {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.strokeStyle = 'rgba(100, 140, 180, 0.06)';
             ctx.lineWidth = 1;
         }
         ctx.stroke();
+    }
+
+    // Glowing dots at major grid intersections (every 5×5 cells)
+    if (!lowQuality) {
+        const majorStep = GRID_SIZE * 5;
+        const majorStartX = Math.floor(left / majorStep) * majorStep;
+        const majorStartY = Math.floor(top / majorStep) * majorStep;
+
+        for (let x = majorStartX; x <= right; x += majorStep) {
+            if (x < 0 || x > ARENA_SIZE) continue;
+            for (let y = majorStartY; y <= bottom; y += majorStep) {
+                if (y < 0 || y > ARENA_SIZE) continue;
+
+                // Each dot pulses at a slightly different phase based on position
+                const phase = ((x * 7 + y * 13) % 1000) / 1000;
+                const pulse = 0.3 + Math.sin(time * 1.5 + phase * Math.PI * 2) * 0.2;
+
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 200, 255, ${pulse})`;
+                ctx.fill();
+            }
+        }
     }
 }
 
