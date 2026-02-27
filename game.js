@@ -5328,14 +5328,12 @@ function showUnlockCelebration(unlockedIndices) {
         setTimeout(() => soundManager.playTone({ freq: 1047, type: 'sine', duration: 0.4, vol: 0.2, slide: 50, pan: 0 }), 350);
     }
 
-    // Auto-dismiss after 4 seconds
     const dismissCelebration = () => {
         unlockCelebration.classList.add('hidden');
         deathScreen.classList.remove('hidden');
         unlockCelebration.removeEventListener('click', dismissCelebration);
     };
     unlockCelebration.addEventListener('click', dismissCelebration);
-    setTimeout(dismissCelebration, 4000);
 }
 
 function updateNextUnlockTeaser() {
