@@ -3450,13 +3450,36 @@ function getNextUnlock() {
 
 function checkNewUnlocks() {
     const newlyUnlocked = [];
-    let next = getNextUnlock();
-    while (next && currentUnlockProgress >= next.cost) {
-        currentUnlockProgress -= next.cost;
-        unlockedSnakes.add(next.index);
-        newlyUnlocked.push(next.index);
-        next = getNextUnlock();
+
+    // We will keep unlocking until we can't afford any more locked snakes.
+    let canUnlockMore = true;
+    while (canUnlockMore) {
+        let bestUnlockIndex = -1;
+        let maxCost = -1;
+
+        // Find the most expensive locked snake we can afford
+        for (let pos = 0; pos < UNLOCK_ORDER.length; pos++) {
+            const idx = UNLOCK_ORDER[pos];
+            if (!unlockedSnakes.has(idx)) {
+                const cost = getSnakeCost(idx);
+                if (currentUnlockProgress >= cost && cost > maxCost) {
+                    maxCost = cost;
+                    bestUnlockIndex = idx;
+                }
+            }
+        }
+
+        if (bestUnlockIndex !== -1) {
+            // Deduct the cost and unlock it
+            currentUnlockProgress -= maxCost;
+            unlockedSnakes.add(bestUnlockIndex);
+            newlyUnlocked.push(bestUnlockIndex);
+        } else {
+            // We can't afford any more locked snakes
+            canUnlockMore = false;
+        }
     }
+
     if (newlyUnlocked.length > 0) {
         saveUnlockData();
     }
@@ -6969,7 +6992,15 @@ function initSelectionScreen() {
     snakeGrid.innerHTML = '';
     const nextUp = getNextUnlock(); // The single next snake to unlock
 
-    const displayOrder = [0, 1, 2, ...UNLOCK_ORDER];
+    const baseOrder = [0, 1, 2, ...UNLOCK_ORDER];
+
+    const displayOrder = [...baseOrder].sort((a, b) => {
+        const aUnlocked = isSnakeUnlocked(a);
+        const bUnlocked = isSnakeUnlocked(b);
+        if (aUnlocked && !bUnlocked) return -1;
+        if (!aUnlocked && bUnlocked) return 1;
+        return baseOrder.indexOf(a) - baseOrder.indexOf(b);
+    });
 
     displayOrder.forEach((index) => {
         const style = SNAKE_STYLES[index];

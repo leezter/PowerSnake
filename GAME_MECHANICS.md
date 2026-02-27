@@ -91,8 +91,8 @@ Food items are attracted to snake heads when they come within range, creating a 
 ### 2.6 Unlock System (Hardcore Progression)
 The game features a high-stakes progression system where players unlock new snake styles sequentially.
 
-*   **Sequential Unlocks:** Snakes are unlocked one by one in a fixed order (Common → Rare → Epic → Legendary → Mythic → Ultimate).
-*   **Hardcore Rule:** Progress towards the *next* unlock is **reset to 0** upon death. Players must earn the full cost of the next snake in a **single life** to unlock it.
+*   **Dynamic Unlocks:** Players unlock the highest rarity snake they can afford with their score from a single run. For example, a single high score of 3000 unlocks a Mythic rarity snake directly, skipping the cheaper ones.
+*   **Hardcore Rule:** Progress towards unlocks is **reset to 0** upon death. Players must earn the full cost of a snake in a **single life** to unlock it.
 *   **Tiers & Costs:**
     *   **Common:** 500 pts
     *   **Rare:** 1000 pts
