@@ -4506,17 +4506,26 @@ function render() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
 
-    // Camera â€” lead ahead with dual-stage position smoothing
+    // Camera — lead ahead with dual-stage position smoothing
     if (player && player.alive) {
         const dt = gameDt;
         const dv = DIR_VECTORS[player.dir];
 
         // --- Compute lookahead target directly from snake direction ---
-        const lookAhead = 80 + player.speed * 25;
+        // Feed-forward compensation: the triple-stage filter lags behind a moving
+        // target by velocity * sum(1/rate). We increase the lookahead to cancel
+        // the extra lag above base speed so the camera stays ahead at any speed.
+        const filterDelay = 1 / 8.0 + 1 / 5.5 + 1 / 4.0; // ~0.557s total group delay
+        const velocity = player.speed * 60;          // px/s (moveAmount = speed * dt * 60)
+        const baseLag = BASE_SPEED * 60 * filterDelay;
+        const currentLag = velocity * filterDelay;
+        const lagCompensation = currentLag - baseLag; // extra lag above base speed
+
+        const lookAhead = 80 + player.speed * 25 + lagCompensation;
         const rawTargetX = player.x + dv.x * lookAhead;
         const rawTargetY = player.y + dv.y * lookAhead;
 
-        // --- Triple-stage position smoothing (third-order filter â‰ˆ Gaussian response) ---
+        // --- Triple-stage position smoothing (third-order filter ≈ Gaussian response) ---
         // Three cascaded smoothers produce the smoothest possible transition:
         // no abrupt acceleration changes at start or end of camera moves.
 
