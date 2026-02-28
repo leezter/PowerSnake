@@ -115,7 +115,7 @@ The camera centers on a **lookahead point** in front of the snake's head, giving
 **Lookahead:**
 *   **Target Point:** `player position + direction × (80 + speed × 25 + lagCompensation)`.
 *   The offset scales with speed — when boosting, the camera leads further ahead.
-*   **Feed-forward compensation:** The triple-stage filter introduces a steady-state tracking lag of `velocity × (1/r1 + 1/r2 + 1/r3)` when following a moving target. At base speed this lag is part of the natural feel. At higher speeds the extra lag is compensated by increasing the lookahead distance by `(speed - BASE_SPEED) × 60 × filterDelay`, keeping the effective camera lead consistent.
+*   **Feed-forward compensation:** The triple-stage filter introduces a steady-state tracking lag of `velocity × (1/r1 + 1/r2 + 1/r3)` when following a moving target. At base speed this lag is part of the natural feel. At higher speeds, 70% of the extra lag is compensated by increasing the lookahead distance by `(speed - BASE_SPEED) × 60 × filterDelay × 0.7`, keeping the effective camera lead consistent without pushing too far ahead.
 *   The direction is taken directly from the snake's cardinal `DIR_VECTORS` (no angular interpolation), so turns produce straight-line camera transitions rather than circular sweeps.
 
 **Triple-Stage Smoothing (Gaussian-like response):**
