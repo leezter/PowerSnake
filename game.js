@@ -4519,7 +4519,7 @@ function render() {
         const velocity = player.speed * 60;          // px/s (moveAmount = speed * dt * 60)
         const baseLag = BASE_SPEED * 60 * filterDelay;
         const currentLag = velocity * filterDelay;
-        const lagCompensation = currentLag - baseLag; // extra lag above base speed
+        const lagCompensation = (currentLag - baseLag) * 0.7; // 70% of extra lag above base speed
 
         const lookAhead = 80 + player.speed * 25 + lagCompensation;
         const rawTargetX = player.x + dv.x * lookAhead;
