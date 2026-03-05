@@ -4519,9 +4519,12 @@ function render() {
         const velocity = player.speed * 60;          // px/s (moveAmount = speed * dt * 60)
         const baseLag = BASE_SPEED * 60 * filterDelay;
         const currentLag = velocity * filterDelay;
-        const lagCompensation = (currentLag - baseLag) * 0.7; // 70% of extra lag above base speed
+        const lagCompensation = (currentLag - baseLag) * 0.6; // 60% of extra lag above base speed (midpoint between original 70% and reduced 50%)
 
-        const lookAhead = 80 + player.speed * 25 + lagCompensation;
+        // Speed term is the average of the old linear curve and a sqrt curve —
+        // identical to the original at base speed, halfway between old and new at high speeds.
+        const speedNorm = player.speed / BASE_SPEED; // 1.0 at base, ~3.75 at max
+        const lookAhead = 80 + BASE_SPEED * 25 * (speedNorm + Math.sqrt(speedNorm)) / 2 + lagCompensation;
         const rawTargetX = player.x + dv.x * lookAhead;
         const rawTargetY = player.y + dv.y * lookAhead;
 
