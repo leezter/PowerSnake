@@ -5061,8 +5061,8 @@ function drawMinimap() {
 
     minimapCtx.clearRect(0, 0, mw, mh);
 
-    // Background
-    minimapCtx.fillStyle = 'rgba(6, 6, 12, 0.8)';
+    // Background (transparent so CSS controls it)
+    minimapCtx.fillStyle = 'rgba(6, 6, 12, 0)';
     minimapCtx.fillRect(0, 0, mw, mh);
 
     // Border
