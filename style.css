@@ -1186,6 +1186,138 @@ body::before {
 }
 
 /* ============================================
+   Landscape Mobile Scaling (Menu & Death)
+   ============================================ */
+@media (max-height: 500px) and (orientation: landscape) {
+    .overlay {
+        overflow-y: auto;
+    }
+
+    .overlay-content {
+        padding: 12px 20px;
+        max-height: 96vh;
+        overflow-y: auto;
+    }
+
+    /* ---- Start Screen ---- */
+    .game-title {
+        font-size: 1.4rem;
+        letter-spacing: 3px;
+        margin-bottom: 0;
+    }
+
+    .tagline {
+        margin-bottom: 6px;
+        font-size: 0.75rem;
+        letter-spacing: 2px;
+    }
+
+    #highScoreDisplay {
+        margin-bottom: 4px !important;
+        font-size: 0.75rem;
+    }
+
+    .next-unlock-teaser {
+        margin-bottom: 4px;
+        padding: 4px 10px;
+    }
+
+    .teaser-label {
+        font-size: 0.6rem;
+        margin-bottom: 4px;
+    }
+
+    .teaser-bar {
+        height: 4px;
+        margin-bottom: 3px;
+    }
+
+    .teaser-pts {
+        font-size: 0.5rem;
+    }
+
+    .input-group {
+        margin-bottom: 6px;
+    }
+
+    #nicknameInput {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        border-radius: 8px;
+    }
+
+    .button-group {
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+
+    .neon-button {
+        font-size: 1rem;
+        padding: 8px 0;
+        border-radius: 8px;
+    }
+
+    .neon-button.secondary-btn {
+        padding: 6px 0;
+        font-size: 0.8rem;
+    }
+
+    .controls-hint {
+        display: none;
+    }
+
+    /* Quality toggle inline style override */
+    #startScreen .overlay-content>div[style*="margin-top"] {
+        margin-top: 4px !important;
+    }
+
+    #startScreen .overlay-content>div[style*="margin-top"] label {
+        font-size: 0.75rem !important;
+    }
+
+    /* ---- Death Screen ---- */
+    .death-title {
+        font-size: 1.5rem;
+        letter-spacing: 4px;
+        margin-bottom: 10px;
+    }
+
+    .death-stats {
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .stat {
+        padding: 6px 12px;
+        border-radius: 8px;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+    }
+
+    .stat-value {
+        font-size: 1.2rem;
+    }
+
+    .points-earned {
+        font-size: 1rem;
+        margin-bottom: 2px;
+    }
+
+    .next-unlock-hint {
+        margin-bottom: 6px;
+        font-size: 0.75rem;
+    }
+
+    /* Tighten death screen button spacing */
+    #deathSelectionButton,
+    #deathHomeButton {
+        margin-top: 6px !important;
+    }
+}
+
+/* ============================================
    Portrait Mobile Fixes (Eliminate Screen)
    ============================================ */
 @media (max-width: 768px) and (orientation: portrait) {
