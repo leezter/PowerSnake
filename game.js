@@ -4143,10 +4143,22 @@ class FloatingText {
 // ---- Food Functions ----
 function spawnFood(count) {
     const margin = 100;
+    const innerMargin = 800;
     for (let i = 0; i < count; i++) {
+        let fx, fy;
+
+        // 80% chance to spawn food away from the outside edges to prevent accumulation
+        if (Math.random() < 0.8) {
+            fx = rand(innerMargin, ARENA_SIZE - innerMargin);
+            fy = rand(innerMargin, ARENA_SIZE - innerMargin);
+        } else {
+            fx = rand(margin, ARENA_SIZE - margin);
+            fy = rand(margin, ARENA_SIZE - margin);
+        }
+
         foods.push({
-            x: rand(margin, ARENA_SIZE - margin),
-            y: rand(margin, ARENA_SIZE - margin),
+            x: fx,
+            y: fy,
             value: randInt(1, 3),
             color: pick(NEON_COLORS),
             pulse: rand(0, Math.PI * 2),
