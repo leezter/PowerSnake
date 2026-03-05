@@ -4200,6 +4200,9 @@ function spawnFood(count) {
 }
 
 function maintainFood() {
+    // During tutorial, don't auto-spawn food until the food step (step 2+)
+    if (tutorialActive && tutorialStep < 2) return;
+
     // Safety Net: If food drops too low (due to high consumption vs 15s delay),
     // force immediate spawning to keep the game playable.
     // This acts as a floor (150 food) while the top 150 cycles on the 15s timer.
@@ -7195,62 +7198,8 @@ function startTutorial(isReplay) {
     camera.st2Y = camera.y;
     camera.zoom = 1.0;
 
-    // Spawn only 3 passive bots (far from player to start)
-    const availableIndices = [];
-    for (let i = 0; i < SNAKE_STYLES.length; i++) {
-        if (i !== playerSnakeStyleIndex) availableIndices.push(i);
-    }
-    for (let i = availableIndices.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [availableIndices[i], availableIndices[j]] = [availableIndices[j], availableIndices[i]];
-    }
-    for (let i = 0; i < Math.min(3, availableIndices.length); i++) {
-        const idx = availableIndices[i];
-        const style = SNAKE_STYLES[idx];
-        const bot = new Snake(style.name, style, false);
-        // Place bots away from center
-        bot.x = ARENA_SIZE / 2 + rand(-1200, 1200);
-        bot.y = ARENA_SIZE / 2 + rand(-1200, 1200);
-        // Ensure minimum distance from player
-        while (dist(bot, player) < 600) {
-            bot.x = ARENA_SIZE / 2 + rand(-1200, 1200);
-            bot.y = ARENA_SIZE / 2 + rand(-1200, 1200);
-        }
-        bot.segments = [];
-        const bdv = DIR_VECTORS[(bot.dir + 2) % 4];
-        for (let j = 0; j < 15; j++) {
-            bot.segments.push({
-                x: bot.x + bdv.x * j * SEGMENT_SPACING,
-                y: bot.y + bdv.y * j * SEGMENT_SPACING,
-            });
-        }
-        bot.score = randInt(10, 80);
-        const extra = Math.floor(bot.score / 3);
-        for (let j = 0; j < extra; j++) {
-            const lastSeg = bot.segments[bot.segments.length - 1];
-            bot.segments.push({
-                x: lastSeg.x + bdv.x * SEGMENT_SPACING,
-                y: lastSeg.y + bdv.y * SEGMENT_SPACING,
-            });
-        }
-        snakes.push(bot);
-    }
-
-    // Spawn food — generous cluster near the player
-    spawnFood(100);
-    // Also spawn a cluster right in front of the player
-    for (let i = 0; i < 20; i++) {
-        const foodDist = rand(60, 350);
-        const angle = rand(-0.6, 0.6); // narrow cone ahead
-        foods.push({
-            x: player.x + Math.cos(angle) * foodDist,
-            y: player.y + Math.sin(angle) * foodDist,
-            value: randInt(1, 3),
-            color: pick(NEON_COLORS),
-            pulse: rand(0, Math.PI * 2),
-            size: rand(3, 6),
-        });
-    }
+    // Start with an EMPTY arena — no food, no bots
+    // Elements are spawned progressively as each tutorial step introduces them
 
     // UI
     startScreen.classList.add('hidden');
@@ -7308,7 +7257,11 @@ function advanceTutorialStep() {
         soundManager.playTone({ freq, type: 'triangle', duration: 0.12, vol: 0.2, slide: 60 });
     }
 
-    // Step-specific setups
+    // Step-specific setups — progressively populate the arena
+    if (tutorialStep === 2) {
+        // Spawn a food cluster near the player for the food-eating step
+        spawnTutorialFood();
+    }
     if (tutorialStep === 3) {
         // Spawn a bot close to the player for boost demo
         spawnTutorialBoostBot();
@@ -7415,6 +7368,24 @@ function updateTutorial(dt) {
         default:
             // Intermediate states (x.5) — just wait
             break;
+    }
+}
+
+function spawnTutorialFood() {
+    // Spawn a few food pellets scattered around the player so they must navigate to them
+    if (!player) return;
+    const count = 7;
+    for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 / count) * i + rand(-0.3, 0.3); // evenly spread with jitter
+        const distance = rand(200, 500); // far enough that they won't auto-collect
+        foods.push({
+            x: player.x + Math.cos(angle) * distance,
+            y: player.y + Math.sin(angle) * distance,
+            value: 1,
+            color: pick(NEON_COLORS),
+            pulse: rand(0, Math.PI * 2),
+            size: rand(4, 6),
+        });
     }
 }
 
