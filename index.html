@@ -14,6 +14,7 @@
     <!-- Start Screen -->
     <div id="startScreen" class="overlay">
         <div class="overlay-content">
+            <button id="tutorialButton" class="tutorial-menu-btn" title="Replay the tutorial">📖 TUTORIAL</button>
             <h1 class="game-title">POWER<span class="accent">SNAKE</span></h1>
             <p class="tagline">Dominate the neon arena</p>
             <p id="highScoreDisplay"
@@ -91,6 +92,16 @@
             <div class="unlock-snakes-list"></div>
             <p class="unlock-dismiss">TAP TO CONTINUE</p>
         </div>
+    </div>
+
+    <!-- Tutorial Overlay (shown during tutorial gameplay) -->
+    <div id="tutorialOverlay" class="hidden">
+        <div id="tutorialMessageBox" class="tutorial-message-box">
+            <div id="tutorialStepIndicator" class="tutorial-step-indicator"></div>
+            <div id="tutorialMessage" class="tutorial-message"></div>
+            <div id="tutorialSubtext" class="tutorial-subtext"></div>
+        </div>
+        <button id="skipTutorialButton" class="skip-tutorial-btn">SKIP TUTORIAL</button>
     </div>
 
     <!-- HUD -->

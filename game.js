@@ -3554,6 +3554,38 @@ let currentUnlockProgress = 0;
 let unlockedSnakes = new Set([0, 1, 2]); // 3 free starters
 let pendingUnlocks = []; // Queue of newly unlocked snake indices
 
+// ---- Tutorial State ----
+const tutorialOverlay = document.getElementById('tutorialOverlay');
+const tutorialMessageBox = document.getElementById('tutorialMessageBox');
+const tutorialMessageEl = document.getElementById('tutorialMessage');
+const tutorialSubtextEl = document.getElementById('tutorialSubtext');
+const tutorialStepIndicator = document.getElementById('tutorialStepIndicator');
+const skipTutorialButton = document.getElementById('skipTutorialButton');
+const tutorialButton = document.getElementById('tutorialButton');
+
+let tutorialActive = false;
+let tutorialStep = -1;
+let tutorialStepTimer = 0;
+let tutorialCompleted = false; // loaded from localStorage
+let tutorialIsReplay = false; // true when replaying from menu button
+let tutorialFoodEatenCount = 0;
+let tutorialPlayerMoved = false;
+let tutorialBotKilled = false;
+let tutorialBoostTriggered = false;
+let tutorialDummyBot = null;
+let tutorialStepAdvancePending = false; // prevents re-triggering during delayed advance
+
+const TUTORIAL_TOTAL_STEPS = 7;
+const TUTORIAL_STEPS = [
+    { message: 'WELCOME TO POWERSNAKE!', subtext: 'Let\'s learn the basics...', duration: 3.0, type: 'auto' },
+    { message: 'MOVE YOUR SNAKE', subtext: '', duration: 0, type: 'action' },
+    { message: 'EAT FOOD TO GROW!', subtext: 'Collect 5 food pellets', duration: 0, type: 'action' },
+    { message: '\u26A1 SPEED BOOST', subtext: 'Get close to another snake for a boost!', duration: 0, type: 'action' },
+    { message: 'ELIMINATE RIVALS!', subtext: 'Cut off the enemy snake to destroy it!', duration: 0, type: 'action' },
+    { message: '\u26A0\uFE0F STAY ALIVE!', subtext: 'Avoid walls and other snakes \u2014 death resets everything!', duration: 4.0, type: 'auto' },
+    { message: '\u{1F3C6} YOU\'RE READY!', subtext: 'Go dominate the neon arena!', duration: 3.5, type: 'auto' }
+];
+
 // ---- Resize ----
 function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -5400,6 +5432,31 @@ function startGame(nickname) {
 }
 
 function onPlayerDeath() {
+    // During tutorial, respawn the player instead of showing death screen
+    if (tutorialActive) {
+        // Brief delay then respawn
+        setTimeout(() => {
+            if (!gameRunning) return;
+            respawnPlayer();
+            // Show a quick tip message
+            if (tutorialMessageEl) {
+                tutorialMessageEl.textContent = 'OOPS! TRY AGAIN!';
+                tutorialSubtextEl.textContent = "Don't worry, you respawned!";
+            }
+            // Restore the previous step message after 2 seconds
+            setTimeout(() => {
+                if (tutorialActive && tutorialStep >= 0 && tutorialStep < TUTORIAL_TOTAL_STEPS) {
+                    const step = TUTORIAL_STEPS[Math.floor(tutorialStep)];
+                    if (step) {
+                        tutorialMessageEl.textContent = step.message;
+                        tutorialSubtextEl.textContent = step.subtext;
+                    }
+                }
+            }, 2000);
+        }, 800);
+        return; // Skip normal death flow
+    }
+
     deathTime = performance.now();
     const earnedPoints = player ? player.score : 0;
 
@@ -5545,6 +5602,9 @@ function updateNextUnlockTeaser() {
 
 function gameLoop(timestamp) {
     if (!gameRunning) return;
+
+    // Tutorial step machine
+    if (tutorialActive) updateTutorial((timestamp - lastTime) / 1000);
 
     const now = timestamp || performance.now();
     let dt = (now - lastTime) / 1000;
@@ -7003,7 +7063,11 @@ const soundManager = new SoundManager();
 playButton.addEventListener('click', () => {
     soundManager.init();
     soundManager.resume();
-    startGame(nicknameInput.value.trim());
+    if (!tutorialCompleted) {
+        startTutorial(false);
+    } else {
+        startGame(nicknameInput.value.trim());
+    }
 });
 
 replayButton.addEventListener('click', () => {
@@ -7060,7 +7124,11 @@ nicknameInput.addEventListener('keydown', (e) => {
         e.stopPropagation();
         soundManager.init();
         soundManager.resume();
-        startGame(nicknameInput.value.trim());
+        if (!tutorialCompleted) {
+            startTutorial(false);
+        } else {
+            startGame(nicknameInput.value.trim());
+        }
     }
 });
 
@@ -7073,6 +7141,426 @@ window.addEventListener('popstate', (event) => {
     }
 });
 
+// ---- Tutorial Engine ----
+
+function startTutorial(isReplay) {
+    tutorialIsReplay = isReplay;
+    tutorialActive = true;
+    tutorialStep = -1;
+    tutorialStepTimer = 0;
+    tutorialFoodEatenCount = 0;
+    tutorialPlayerMoved = false;
+    tutorialBotKilled = false;
+    tutorialBoostTriggered = false;
+    tutorialDummyBot = null;
+    tutorialStepAdvancePending = false;
+
+    // Push history state
+    history.pushState({ page: 'game' }, 'In Game', '#game');
+
+    const nickname = nicknameInput.value.trim() || 'Player';
+    localStorage.setItem('ps_nickname', nickname);
+    snakes = [];
+    foods = [];
+    particles = [];
+    floatingTexts = [];
+
+    // Create player in center
+    const playerStyle = SNAKE_STYLES[playerSnakeStyleIndex];
+    player = new Snake(nickname, playerStyle, true);
+    // Force player to center of arena
+    player.x = ARENA_SIZE / 2;
+    player.y = ARENA_SIZE / 2;
+    player.dir = 0; // face right
+    player.nextDir = 0;
+    // Rebuild segments behind the player
+    player.segments = [];
+    const dv = DIR_VECTORS[2]; // behind = left
+    for (let i = 0; i < 15; i++) {
+        player.segments.push({
+            x: player.x + dv.x * i * SEGMENT_SPACING,
+            y: player.y + dv.y * i * SEGMENT_SPACING,
+        });
+    }
+    snakes.push(player);
+
+    // Camera
+    const spawnDv = DIR_VECTORS[player.dir];
+    const spawnLookAhead = 80 + BASE_SPEED * 25;
+    camera.x = player.x + spawnDv.x * spawnLookAhead;
+    camera.y = player.y + spawnDv.y * spawnLookAhead;
+    camera.stX = camera.x;
+    camera.stY = camera.y;
+    camera.st2X = camera.x;
+    camera.st2Y = camera.y;
+    camera.zoom = 1.0;
+
+    // Spawn only 3 passive bots (far from player to start)
+    const availableIndices = [];
+    for (let i = 0; i < SNAKE_STYLES.length; i++) {
+        if (i !== playerSnakeStyleIndex) availableIndices.push(i);
+    }
+    for (let i = availableIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [availableIndices[i], availableIndices[j]] = [availableIndices[j], availableIndices[i]];
+    }
+    for (let i = 0; i < Math.min(3, availableIndices.length); i++) {
+        const idx = availableIndices[i];
+        const style = SNAKE_STYLES[idx];
+        const bot = new Snake(style.name, style, false);
+        // Place bots away from center
+        bot.x = ARENA_SIZE / 2 + rand(-1200, 1200);
+        bot.y = ARENA_SIZE / 2 + rand(-1200, 1200);
+        // Ensure minimum distance from player
+        while (dist(bot, player) < 600) {
+            bot.x = ARENA_SIZE / 2 + rand(-1200, 1200);
+            bot.y = ARENA_SIZE / 2 + rand(-1200, 1200);
+        }
+        bot.segments = [];
+        const bdv = DIR_VECTORS[(bot.dir + 2) % 4];
+        for (let j = 0; j < 15; j++) {
+            bot.segments.push({
+                x: bot.x + bdv.x * j * SEGMENT_SPACING,
+                y: bot.y + bdv.y * j * SEGMENT_SPACING,
+            });
+        }
+        bot.score = randInt(10, 80);
+        const extra = Math.floor(bot.score / 3);
+        for (let j = 0; j < extra; j++) {
+            const lastSeg = bot.segments[bot.segments.length - 1];
+            bot.segments.push({
+                x: lastSeg.x + bdv.x * SEGMENT_SPACING,
+                y: lastSeg.y + bdv.y * SEGMENT_SPACING,
+            });
+        }
+        snakes.push(bot);
+    }
+
+    // Spawn food — generous cluster near the player
+    spawnFood(100);
+    // Also spawn a cluster right in front of the player
+    for (let i = 0; i < 20; i++) {
+        const foodDist = rand(60, 350);
+        const angle = rand(-0.6, 0.6); // narrow cone ahead
+        foods.push({
+            x: player.x + Math.cos(angle) * foodDist,
+            y: player.y + Math.sin(angle) * foodDist,
+            value: randInt(1, 3),
+            color: pick(NEON_COLORS),
+            pulse: rand(0, Math.PI * 2),
+            size: rand(3, 6),
+        });
+    }
+
+    // UI
+    startScreen.classList.add('hidden');
+    deathScreen.classList.add('hidden');
+    hud.classList.remove('hidden');
+    tutorialOverlay.classList.remove('hidden');
+
+    soundManager.playStart();
+
+    gameRunning = true;
+    deathTime = 0;
+    lastTime = performance.now();
+    if (animationId) cancelAnimationFrame(animationId);
+    animationId = requestAnimationFrame(gameLoop);
+
+    // Start first step after a brief delay
+    setTimeout(() => advanceTutorialStep(), 500);
+}
+
+function advanceTutorialStep() {
+    if (!tutorialActive) return;
+    tutorialStep = Math.floor(tutorialStep) + 1;
+    tutorialStepTimer = 0;
+    tutorialStepAdvancePending = false;
+
+    if (tutorialStep >= TUTORIAL_TOTAL_STEPS) {
+        completeTutorial();
+        return;
+    }
+
+    const step = TUTORIAL_STEPS[tutorialStep];
+
+    // Detect mobile for step 1 subtext
+    if (tutorialStep === 1) {
+        const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        step.subtext = isMobile ? 'Swipe or drag to steer' : 'Use WASD or Arrow Keys';
+    }
+
+    // Update message
+    tutorialMessageEl.textContent = step.message;
+    tutorialSubtextEl.textContent = step.subtext;
+
+    // Update step dots
+    updateTutorialDots();
+
+    // Pulse animation
+    tutorialMessageBox.classList.remove('step-transition');
+    void tutorialMessageBox.offsetWidth; // force reflow
+    tutorialMessageBox.classList.add('step-transition');
+
+    // Play step sound
+    if (soundManager && soundManager.ctx) {
+        if (soundManager.ctx.state === 'suspended') soundManager.resume();
+        const freq = 400 + tutorialStep * 80;
+        soundManager.playTone({ freq, type: 'triangle', duration: 0.12, vol: 0.2, slide: 60 });
+    }
+
+    // Step-specific setups
+    if (tutorialStep === 3) {
+        // Spawn a bot close to the player for boost demo
+        spawnTutorialBoostBot();
+    }
+    if (tutorialStep === 4) {
+        // Spawn a slow dumb bot on a predictable path for kill demo
+        spawnTutorialKillBot();
+    }
+}
+
+function updateTutorialDots() {
+    let html = '';
+    for (let i = 0; i < TUTORIAL_TOTAL_STEPS; i++) {
+        let cls = 'tutorial-step-dot';
+        if (i < tutorialStep) cls += ' completed';
+        else if (i === tutorialStep) cls += ' active';
+        html += `<div class="${cls}"></div>`;
+    }
+    tutorialStepIndicator.innerHTML = html;
+}
+
+function updateTutorial(dt) {
+    if (!tutorialActive || tutorialStep < 0) return;
+    tutorialStepTimer += Math.min(dt, 0.05);
+
+    const step = TUTORIAL_STEPS[tutorialStep];
+
+    switch (tutorialStep) {
+        case 0: // Welcome — auto advance
+            if (tutorialStepTimer >= step.duration) advanceTutorialStep();
+            break;
+
+        case 1: // Move — wait for any direction change
+            if (!tutorialStepAdvancePending && player && (player.dir !== 0 || player.nextDir !== player.dir)) {
+                tutorialPlayerMoved = true;
+            }
+            // Also detect if the player has moved at all (joystick input changes dir)
+            if (!tutorialStepAdvancePending && player && player.dir !== 0) tutorialPlayerMoved = true;
+            if (tutorialPlayerMoved && !tutorialStepAdvancePending) {
+                tutorialStepAdvancePending = true;
+                setTimeout(() => advanceTutorialStep(), 800);
+            }
+            break;
+
+        case 2: // Eat food — count food eaten
+            if (player && !tutorialStepAdvancePending) {
+                // Track food by monitoring player score changes
+                const needed = 5;
+                tutorialSubtextEl.textContent = `Collect food! (${Math.min(player.score, needed)}/${needed})`;
+                if (player.score >= needed) {
+                    tutorialStepAdvancePending = true;
+                    setTimeout(() => advanceTutorialStep(), 600);
+                }
+            }
+            break;
+
+        case 3: // Boost — wait for boost to trigger
+            if (!tutorialStepAdvancePending && player && player.boostIntensity > 0.1) {
+                tutorialSubtextEl.textContent = '\u26A1 BOOSTING! Feel the speed!';
+                if (tutorialStepTimer > 2.0) {
+                    tutorialStepAdvancePending = true;
+                    setTimeout(() => advanceTutorialStep(), 1500);
+                }
+            }
+            // Auto-advance after 20s if boost hasn't triggered (fallback)
+            if (!tutorialStepAdvancePending && tutorialStepTimer > 20) {
+                advanceTutorialStep();
+            }
+            break;
+
+        case 4: // Kill — wait for any bot to die
+            {
+                if (!tutorialStepAdvancePending) {
+                    // Check if the dummy bot was killed
+                    if (tutorialDummyBot && !tutorialDummyBot.alive) {
+                        tutorialSubtextEl.textContent = '\u{1F4A5} ELIMINATED!';
+                        tutorialStepAdvancePending = true;
+                        setTimeout(() => advanceTutorialStep(), 1200);
+                    }
+                    // Also count any bot kill
+                    const aliveNonPlayer = snakes.filter(s => s !== player && s.alive).length;
+                    if (!tutorialStepAdvancePending && aliveNonPlayer < (tutorialDummyBot ? 3 : 2)) {
+                        // A bot died
+                        tutorialSubtextEl.textContent = '\u{1F4A5} ELIMINATED!';
+                        tutorialStepAdvancePending = true;
+                        setTimeout(() => advanceTutorialStep(), 1200);
+                    }
+                    // Auto-advance after 25s (fallback)
+                    if (tutorialStepTimer > 25) {
+                        advanceTutorialStep();
+                    }
+                }
+            }
+            break;
+
+        case 5: // Survive warning — auto advance
+            if (tutorialStepTimer >= step.duration) advanceTutorialStep();
+            break;
+
+        case 6: // Ready — auto advance
+            if (tutorialStepTimer >= step.duration) completeTutorial();
+            break;
+
+        default:
+            // Intermediate states (x.5) — just wait
+            break;
+    }
+}
+
+function spawnTutorialBoostBot() {
+    // Spawn a bot that will pass near the player for boost opportunity
+    if (!player) return;
+    const availableIndices = [];
+    for (let i = 0; i < SNAKE_STYLES.length; i++) {
+        if (i !== playerSnakeStyleIndex) availableIndices.push(i);
+    }
+    const idx = pick(availableIndices);
+    const style = SNAKE_STYLES[idx];
+    const bot = new Snake(style.name, style, false);
+
+    // Place the bot parallel to the player, close enough for boost
+    const playerDir = DIR_VECTORS[player.dir];
+    const perpDir = { x: -playerDir.y, y: playerDir.x };
+    bot.x = player.x + perpDir.x * 45 + playerDir.x * 150;
+    bot.y = player.y + perpDir.y * 45 + playerDir.y * 150;
+    bot.dir = player.dir; // Same direction as player
+    bot.nextDir = player.dir;
+    bot.segments = [];
+    const bdv = DIR_VECTORS[(bot.dir + 2) % 4];
+    for (let j = 0; j < 20; j++) {
+        bot.segments.push({
+            x: bot.x + bdv.x * j * SEGMENT_SPACING,
+            y: bot.y + bdv.y * j * SEGMENT_SPACING,
+        });
+    }
+    bot.score = 50;
+    snakes.push(bot);
+}
+
+function spawnTutorialKillBot() {
+    // Spawn a slow bot on a predictable perpendicular path near the player
+    if (!player) return;
+    const availableIndices = [];
+    for (let i = 0; i < SNAKE_STYLES.length; i++) {
+        if (i !== playerSnakeStyleIndex) availableIndices.push(i);
+    }
+    const idx = pick(availableIndices);
+    const style = SNAKE_STYLES[idx];
+    const bot = new Snake(style.name, style, false);
+
+    // Place bot ahead of player, moving perpendicular
+    const playerDir = DIR_VECTORS[player.dir];
+    const perpDirIdx = (player.dir + 1) % 4; // perpendicular direction
+    bot.dir = perpDirIdx;
+    bot.nextDir = perpDirIdx;
+    // Position: ahead of player and to the side
+    bot.x = player.x + playerDir.x * 300;
+    bot.y = player.y + playerDir.y * 300;
+    bot.segments = [];
+    const bdv = DIR_VECTORS[(bot.dir + 2) % 4];
+    for (let j = 0; j < 15; j++) {
+        bot.segments.push({
+            x: bot.x + bdv.x * j * SEGMENT_SPACING,
+            y: bot.y + bdv.y * j * SEGMENT_SPACING,
+        });
+    }
+    bot.score = 30;
+    tutorialDummyBot = bot;
+    snakes.push(bot);
+}
+
+function completeTutorial() {
+    tutorialActive = false;
+    tutorialOverlay.classList.add('hidden');
+
+    // Add completion animation
+    tutorialMessageBox.classList.add('completed');
+
+    // Only unlock on first completion (not replay)
+    const alreadyDone = localStorage.getItem('ps_tutorial_completed') === 'true';
+    if (!alreadyDone && !tutorialIsReplay) {
+        // Mark as completed
+        localStorage.setItem('ps_tutorial_completed', 'true');
+        tutorialCompleted = true;
+
+        // Find the next locked Common snake to unlock
+        let tutorialUnlockIdx = -1;
+        for (let pos = 0; pos < UNLOCK_ORDER.length; pos++) {
+            const idx = UNLOCK_ORDER[pos];
+            if (!unlockedSnakes.has(idx)) {
+                const tierIdx = SNAKE_TIER_MAP[idx];
+                if (tierIdx === 1) { // 1 = Common tier
+                    tutorialUnlockIdx = idx;
+                    break;
+                }
+                // Stop searching if we've passed Common tier
+                if (tierIdx > 1) break;
+            }
+        }
+
+        if (tutorialUnlockIdx !== -1) {
+            unlockedSnakes.add(tutorialUnlockIdx);
+            saveUnlockData();
+
+            // Show celebration after a short delay
+            setTimeout(() => {
+                showUnlockCelebration([tutorialUnlockIdx]);
+            }, 500);
+        }
+    } else {
+        // Mark as completed even on replay (for the flag)
+        localStorage.setItem('ps_tutorial_completed', 'true');
+        tutorialCompleted = true;
+    }
+
+    // Play completion fanfare
+    if (soundManager && soundManager.ctx) {
+        if (soundManager.ctx.state === 'suspended') soundManager.resume();
+        soundManager.playTone({ freq: 523, type: 'triangle', duration: 0.15, vol: 0.25, slide: 100, pan: -0.3 });
+        setTimeout(() => soundManager.playTone({ freq: 659, type: 'triangle', duration: 0.15, vol: 0.25, slide: 100, pan: 0 }), 100);
+        setTimeout(() => soundManager.playTone({ freq: 784, type: 'triangle', duration: 0.2, vol: 0.3, slide: 100, pan: 0.3 }), 200);
+        setTimeout(() => soundManager.playTone({ freq: 1047, type: 'sine', duration: 0.4, vol: 0.2, slide: 50, pan: 0 }), 350);
+    }
+
+    // Game continues running — player stays in arena
+}
+
+function skipTutorial() {
+    tutorialActive = false;
+    tutorialOverlay.classList.add('hidden');
+    // Do NOT mark as completed
+    // Return to home screen
+    goToHomeScreen();
+}
+
+// Skip Tutorial button
+if (skipTutorialButton) {
+    skipTutorialButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        skipTutorial();
+    });
+}
+
+// Tutorial replay button on main menu
+if (tutorialButton) {
+    tutorialButton.addEventListener('click', () => {
+        soundManager.init();
+        soundManager.resume();
+        startTutorial(true);
+    });
+}
+
 function goToHomeScreen() {
     gameRunning = false;
     soundManager.resume(); // Ensure context is active
@@ -7080,6 +7568,8 @@ function goToHomeScreen() {
     // Hide all in-game layers
     if (hud) hud.classList.add('hidden');
     if (deathScreen) deathScreen.classList.add('hidden');
+    if (tutorialOverlay) tutorialOverlay.classList.add('hidden');
+    tutorialActive = false;
     if (typeof snakeSelectionScreen !== 'undefined') {
         snakeSelectionScreen.classList.add('hidden');
     }
@@ -7121,6 +7611,9 @@ function loadSettings() {
         } else {
             lowQuality = true; // Default
         }
+
+        // Load tutorial completion flag
+        tutorialCompleted = localStorage.getItem('ps_tutorial_completed') === 'true';
 
         // Load unlock data
         const savedLP = localStorage.getItem('ps_lifetime_points');
