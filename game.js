@@ -3583,13 +3583,13 @@ let tutorialWasBoosting = false; // tracks if player was boosting last frame (fo
 
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
-    { message: 'WELCOME TO POWERSNAKE!', subtext: 'Let\'s learn the basics...', duration: 3.0, type: 'auto' },
-    { message: 'MOVE YOUR SNAKE', subtext: '', duration: 0, type: 'action' },
-    { message: 'EAT FOOD TO GROW!', subtext: 'Collect 5 food pellets', duration: 0, type: 'action' },
-    { message: '\u26A1 SPEED BOOST', subtext: 'Run alongside another snake to boost! (0/3)', duration: 0, type: 'action' },
-    { message: 'ELIMINATE RIVALS!', subtext: 'Cut off the enemy snake to destroy it!', duration: 0, type: 'action' },
-    { message: '\u26A0\uFE0F SURVIVE & CONQUER!', subtext: 'Survival is key! Eat to grow, dominate the arena, and become the King. Over 70 unique snakes can be unlocked!', duration: 0, type: 'action' },
-    { message: '\u{1F3C6} YOU\'RE READY!', subtext: 'Go dominate the neon arena!', duration: 3.5, type: 'auto' }
+    { message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed neon snake action...', duration: 3.5, type: 'auto' },
+    { message: 'MOVE YOUR SNAKE', subtext: 'Use keys or joystick to navigate the arena', duration: 0, type: 'action' },
+    { message: 'EAT TO GROW!', subtext: 'Collect 5 energy pellets to increase your size', duration: 0, type: 'action' },
+    { message: '\u26A1 THE BOOST ZONE', subtext: 'Run parallel to another snake to trigger a speed boost! (0/3)', duration: 0, type: 'action' },
+    { message: 'ELIMINATE RIVALS!', subtext: 'Intercept enemies to turn them into energy pellets!', duration: 0, type: 'action' },
+    { message: '\u26A0\uFE0F ULTIMATE CHALLENGE!', subtext: 'Reach 100 points to conquer the arena. Unlock 70+ unique snakes!', duration: 0, type: 'action' },
+    { message: '\u{1F3C6} TUTORIAL COMPLETE!', subtext: 'Go dominate the arena, King!', duration: 3.5, type: 'auto' }
 ];
 
 // ---- Resize ----
@@ -7261,16 +7261,16 @@ function advanceTutorialStep() {
     } else {
         showTutorialTransition(() => {
             performStepAdvance();
-        }, false);
+        });
     }
 }
 
-function showTutorialTransition(callback, isReset = false) {
+function showTutorialTransition(callback, transitionText = null) {
     if (tutorialInTransition) return;
     tutorialInTransition = true;
 
-    if (isReset) {
-        transitionTextEl.textContent = "RETRYING STEP...";
+    if (transitionText) {
+        transitionTextEl.textContent = transitionText;
     } else {
         // Update transition screen text based on the upcoming step
         const nextStepIdx = Math.floor(tutorialStep) + 1;
@@ -7278,7 +7278,7 @@ function showTutorialTransition(callback, isReset = false) {
             const nextStep = TUTORIAL_STEPS[nextStepIdx];
             transitionTextEl.textContent = `NEXT: ${nextStep.message}`;
         } else {
-            transitionTextEl.textContent = "FINISHING TUTORIAL...";
+            transitionTextEl.textContent = "READY FOR BATTLE...";
         }
     }
 
@@ -7419,7 +7419,7 @@ function updateTutorial(dt) {
             if (player && !tutorialStepAdvancePending) {
                 // Track food by monitoring player score changes
                 const needed = 5;
-                tutorialSubtextEl.textContent = `Collect food! (${Math.min(player.score, needed)}/${needed})`;
+                tutorialSubtextEl.textContent = `Energy Pellets: ${Math.min(player.score, needed)} / ${needed}`;
                 if (player.score >= needed) {
                     tutorialStepAdvancePending = true;
                     setTimeout(() => advanceTutorialStep(), 600);
@@ -7445,7 +7445,7 @@ function updateTutorial(dt) {
                 }
 
                 if (shouldReset) {
-                    resetTutorialBoostScenario();
+                    resetTutorialBoostScenario("RETURNING TO START...");
                     break;
                 }
 
@@ -7463,14 +7463,14 @@ function updateTutorial(dt) {
                         tutorialStepAdvancePending = true;
                         setTimeout(() => {
                             tutorialStepAdvancePending = false;
-                            resetTutorialBoostScenario();
+                            resetTutorialBoostScenario("NEXT CHALLENGE...");
                         }, 3000);
                     }
                 } else if (isBoosting) {
                     // Still boosting, update display
                     tutorialSubtextEl.textContent = `\u26A1 BOOSTING! (${tutorialBoostCount}/3)`;
                 } else if (!isBoosting && tutorialBoostCount > 0 && tutorialBoostCount < 3) {
-                    tutorialSubtextEl.textContent = `Run alongside another snake to boost! (${tutorialBoostCount}/3)`;
+                    tutorialSubtextEl.textContent = `Run parallel to another snake to boost! (${tutorialBoostCount}/3)`;
                 }
                 tutorialWasBoosting = isBoosting;
             }
@@ -7484,14 +7484,14 @@ function updateTutorial(dt) {
             {
                 if (!tutorialStepAdvancePending) {
                     if (!player.alive) {
-                        resetTutorialKillScenario();
+                        resetTutorialKillScenario("YOU PERISHED! TRY AGAIN...");
                         break;
                     }
                     if (tutorialDummyBot && tutorialDummyBot.alive) {
                         const dx = player.x - tutorialDummyBot.x;
                         const dy = player.y - tutorialDummyBot.y;
                         if (dx * dx + dy * dy > 1500 * 1500) {
-                            resetTutorialKillScenario();
+                            resetTutorialKillScenario("RIVAL ESCAPED! LET'S RESET...");
                             break;
                         }
                     }
@@ -7503,7 +7503,7 @@ function updateTutorial(dt) {
                             setTimeout(() => advanceTutorialStep(), 1200);
                         } else {
                             // If the bot died by crashing into a wall, restart
-                            resetTutorialKillScenario();
+                            resetTutorialKillScenario("RIVAL CRASHED! TRY AGAIN...");
                             break;
                         }
                     }
@@ -7514,7 +7514,7 @@ function updateTutorial(dt) {
         case 5: // Survive & Conquer
             if (player && !tutorialStepAdvancePending) {
                 const target = 100;
-                tutorialSubtextEl.textContent = `Reach ${target} points! (${Math.min(player.score, target)}/${target})`;
+                tutorialSubtextEl.textContent = `Arena Score: ${Math.min(player.score, target)} / ${target}`;
                 if (player.score >= target) {
                     tutorialSubtextEl.textContent = '\u{1F451} ARENA CONQUERED!';
                     tutorialStepAdvancePending = true;
@@ -7551,10 +7551,10 @@ function spawnTutorialFood() {
     }
 }
 
-function resetTutorialBoostScenario() {
+function resetTutorialBoostScenario(customText) {
     showTutorialTransition(() => {
         performResetTutorialBoostScenario();
-    }, true);
+    }, customText || "RETRYING CHALLENGE...");
 }
 
 function performResetTutorialBoostScenario() {
@@ -7735,10 +7735,10 @@ function spawnTutorialKillBot() {
     snakes.push(bot);
 }
 
-function resetTutorialKillScenario() {
+function resetTutorialKillScenario(customText) {
     showTutorialTransition(() => {
         performResetTutorialKillScenario();
-    }, true);
+    }, customText || "RETRYING CHALLENGE...");
 }
 
 function performResetTutorialKillScenario() {
