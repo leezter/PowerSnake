@@ -7340,11 +7340,26 @@ function updateTutorial(dt) {
 
         case 3: // Boost — require 3 separate boosts
             if (!tutorialStepAdvancePending && player) {
-                // If the boost bot died, respawn both player and bot to initial positions
-                if (tutorialBoostBot && !tutorialBoostBot.alive) {
+                // If player died, bot died, or player got too far away, repeat current setup
+                let shouldReset = false;
+                if (!player.alive) {
+                    shouldReset = true;
+                } else if (tutorialBoostBot && !tutorialBoostBot.alive) {
+                    shouldReset = true;
+                } else if (tutorialBoostBot) {
+                    const dx = player.x - (ARENA_SIZE / 2);
+                    const dy = player.y - (ARENA_SIZE / 2);
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq > 2000 * 2000) { // far away from the boost setup area
+                        shouldReset = true;
+                    }
+                }
+
+                if (shouldReset) {
                     resetTutorialBoostScenario();
                     break;
                 }
+
                 const isBoosting = player.boostIntensity > 0.1;
                 // Detect rising edge: was NOT boosting, now IS boosting
                 if (isBoosting && !tutorialWasBoosting) {
@@ -7352,9 +7367,15 @@ function updateTutorial(dt) {
                     if (tutorialBoostCount >= 3) {
                         tutorialSubtextEl.textContent = '\u26A1 BOOST MASTERED!';
                         tutorialStepAdvancePending = true;
-                        setTimeout(() => advanceTutorialStep(), 1500);
+                        setTimeout(() => advanceTutorialStep(), 3000);
                     } else {
                         tutorialSubtextEl.textContent = `\u26A1 BOOSTING! (${tutorialBoostCount}/3)`;
+                        // Provide a short delay to let them feel the boost before teleporting to the next setup
+                        tutorialStepAdvancePending = true;
+                        setTimeout(() => {
+                            tutorialStepAdvancePending = false;
+                            resetTutorialBoostScenario();
+                        }, 3000);
                     }
                 } else if (isBoosting) {
                     // Still boosting, update display
@@ -7429,20 +7450,35 @@ function spawnTutorialFood() {
 
 function resetTutorialBoostScenario() {
     // Reset player position to center, rebuild segments, then re-spawn the boost bot
-    if (!player || !player.alive) return;
+    if (!player) return;
 
-    // Reset player to center facing right (no offset — player is naturally
-    // 40px from bot's parallel section, within BOOST_PROXIMITY)
+    if (!player.alive) {
+        player.alive = true;
+        deathScreen.classList.add('hidden');
+        hud.classList.remove('hidden');
+        deathTime = 0;
+    }
+
+    // Determine setup based on tutorialBoostCount
+    let dir = 0; // default RIGHT
+    if (tutorialBoostCount === 1) {
+        dir = 1; // DOWN
+    } else if (tutorialBoostCount === 2) {
+        dir = 3; // UP
+    }
+
     player.x = ARENA_SIZE / 2;
     player.y = ARENA_SIZE / 2;
-    player.dir = 0;
-    player.nextDir = 0;
+    player.dir = dir;
+    player.nextDir = dir;
     player.boostIntensity = 0;
     player.boosting = false;
     player.boostTimer = 0;
     tutorialWasBoosting = false;
     player.segments = [];
-    const dv = DIR_VECTORS[2]; // behind = left
+
+    // Position segments behind player based on direction
+    const dv = DIR_VECTORS[(dir + 2) % 4];
     for (let i = 0; i < 15; i++) {
         player.segments.push({
             x: player.x + dv.x * i * SEGMENT_SPACING,
@@ -7453,19 +7489,19 @@ function resetTutorialBoostScenario() {
     // Re-spawn the boost bot
     spawnTutorialBoostBot();
 
+    // Re-center camera immediately
+    const lookAhead = 80 + BASE_SPEED * 25;
+    const pDv = DIR_VECTORS[player.dir];
+    camera.x = player.x + pDv.x * lookAhead;
+    camera.y = player.y + pDv.y * lookAhead;
+    camera.stX = camera.x;
+    camera.stY = camera.y;
+
     tutorialSubtextEl.textContent = `Run alongside another snake to boost! (${tutorialBoostCount}/3)`;
 }
 
 function spawnTutorialBoostBot() {
-    // L-shaped bot geometry (player faces RIGHT as example):
-    //
-    //                          perp section (toward player's Y, visible)
-    //                          |
-    //                          |
-    // Player --->..............corner===============================> Bot Head
-    //             384px         \--- parallel section (boost zone) --->
-    //            (2 seconds)    offset 40px to the side of player path
-    //
+    // L-shaped bot geometry
     // Math:
     //   BASE_SPEED=3.2, moveAmount = speed * dt * 60 = 192 px/s
     //   2 seconds = 384 px
@@ -7489,15 +7525,30 @@ function spawnTutorialBoostBot() {
     bot.dir = player.dir;
     bot.nextDir = player.dir;
 
-    const playerDir = DIR_VECTORS[player.dir]; // e.g. {1,0} for RIGHT
-    const perpDir = { x: -playerDir.y, y: playerDir.x }; // e.g. {0,1} for DOWN
+    const playerDir = DIR_VECTORS[player.dir]; // forward
+    const perpDir = { x: -playerDir.y, y: playerDir.x }; // right-side perpendicular
 
-    const boostDistance = 384; // 384px = 2 seconds at base speed
-    const sideOffset = 40; // px offset to the side (within BOOST_PROXIMITY=60)
+    let boostDistance = 384; // roughly 2 seconds at base speed
+    let sideOffset = 40; // px offset to the side
     const parallelSegments = 200; // segments for the long parallel section
-    const perpSegments = 30; // segments for the perpendicular visible section
+    let perpSegments = 30; // segments for the perpendicular visible section
 
-    // Corner position: 384px ahead of player, offset to the side
+    // Create 3 different scenarios for the 3 boosts
+    if (tutorialBoostCount === 1) {
+        // Scenario 2: Bot is slightly closer but on the OTHER side and further out
+        // Player will have to slightly turn toward the bot to trigger boost
+        boostDistance = 350;
+        sideOffset = -75;
+        perpSegments = 40;
+    } else if (tutorialBoostCount === 2) {
+        // Scenario 3: Bot is much closer, on the right side, but significantly further out
+        // Player has to react and veer right to hug the bot
+        boostDistance = 250;
+        sideOffset = 95;
+        perpSegments = 50;
+    }
+
+    // Corner position: ahead of player, offset to the side
     const cornerX = player.x + playerDir.x * boostDistance + perpDir.x * sideOffset;
     const cornerY = player.y + playerDir.y * boostDistance + perpDir.y * sideOffset;
 
@@ -7508,9 +7559,6 @@ function spawnTutorialBoostBot() {
     bot.score = 300;
     bot.tutorialFrozen = true; // disable AI so the bot stays in place
 
-    // Build segments from head to tail:
-    // 1. Parallel section: from head backward to corner (along player direction)
-    // 2. Perpendicular section: from corner toward player's path (visible ahead)
     bot.segments = [];
     const behindDir = DIR_VECTORS[(bot.dir + 2) % 4]; // opposite of movement
 
@@ -7522,12 +7570,14 @@ function spawnTutorialBoostBot() {
         });
     }
 
-    // Perpendicular section — extends from corner AWAY from the player's path
-    // so it doesn't block the player's approach
+    // Ensure perpendicular section extends AWAY from the player's path
+    const actualPerpDir = sideOffset >= 0 ? perpDir : { x: -perpDir.x, y: -perpDir.y };
+
+    // Perpendicular section — extends from corner
     for (let j = 1; j <= perpSegments; j++) {
         bot.segments.push({
-            x: cornerX + perpDir.x * j * SEGMENT_SPACING,
-            y: cornerY + perpDir.y * j * SEGMENT_SPACING,
+            x: cornerX + actualPerpDir.x * j * SEGMENT_SPACING,
+            y: cornerY + actualPerpDir.y * j * SEGMENT_SPACING,
         });
     }
 
