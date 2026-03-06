@@ -7398,6 +7398,14 @@ function updateTutorial(dt) {
                         resetTutorialKillScenario();
                         break;
                     }
+                    if (tutorialDummyBot && tutorialDummyBot.alive) {
+                        const dx = player.x - tutorialDummyBot.x;
+                        const dy = player.y - tutorialDummyBot.y;
+                        if (dx * dx + dy * dy > 1500 * 1500) {
+                            resetTutorialKillScenario();
+                            break;
+                        }
+                    }
                     // Check if the dummy bot was killed
                     if (tutorialDummyBot && !tutorialDummyBot.alive) {
                         tutorialSubtextEl.textContent = '💥 ELIMINATED!';
