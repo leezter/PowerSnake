@@ -7287,8 +7287,8 @@ function advanceTutorialStep() {
         spawnTutorialBoostBot();
     }
     if (tutorialStep === 4) {
-        // Spawn a slow dumb bot on a predictable path for kill demo
-        spawnTutorialKillBot();
+        // Prepare scenario for kill demo
+        resetTutorialKillScenario();
     }
 }
 
@@ -7394,17 +7394,13 @@ function updateTutorial(dt) {
         case 4: // Kill — wait for any bot to die
             {
                 if (!tutorialStepAdvancePending) {
+                    if (!player.alive) {
+                        resetTutorialKillScenario();
+                        break;
+                    }
                     // Check if the dummy bot was killed
                     if (tutorialDummyBot && !tutorialDummyBot.alive) {
-                        tutorialSubtextEl.textContent = '\u{1F4A5} ELIMINATED!';
-                        tutorialStepAdvancePending = true;
-                        setTimeout(() => advanceTutorialStep(), 1200);
-                    }
-                    // Also count any bot kill
-                    const aliveNonPlayer = snakes.filter(s => s !== player && s.alive).length;
-                    if (!tutorialStepAdvancePending && aliveNonPlayer < (tutorialDummyBot ? 3 : 2)) {
-                        // A bot died
-                        tutorialSubtextEl.textContent = '\u{1F4A5} ELIMINATED!';
+                        tutorialSubtextEl.textContent = '💥 ELIMINATED!';
                         tutorialStepAdvancePending = true;
                         setTimeout(() => advanceTutorialStep(), 1200);
                     }
@@ -7586,8 +7582,8 @@ function spawnTutorialBoostBot() {
 }
 
 function spawnTutorialKillBot() {
-    // Spawn a slow bot on a predictable perpendicular path near the player
     if (!player) return;
+
     const availableIndices = [];
     for (let i = 0; i < SNAKE_STYLES.length; i++) {
         if (i !== playerSnakeStyleIndex) availableIndices.push(i);
@@ -7596,14 +7592,17 @@ function spawnTutorialKillBot() {
     const style = SNAKE_STYLES[idx];
     const bot = new Snake(style.name, style, false);
 
-    // Place bot ahead of player, moving perpendicular
-    const playerDir = DIR_VECTORS[player.dir];
-    const perpDirIdx = (player.dir + 1) % 4; // perpendicular direction
-    bot.dir = perpDirIdx;
-    bot.nextDir = perpDirIdx;
-    // Position: ahead of player and to the side
-    bot.x = player.x + playerDir.x * 300;
-    bot.y = player.y + playerDir.y * 300;
+    // Bot moves parallel, slightly slower
+    bot.dir = player.dir;
+    bot.nextDir = player.dir;
+
+    // Position bot ahead and to the side
+    const pDir = DIR_VECTORS[player.dir];
+    const pPerp = { x: -pDir.y, y: pDir.x };
+
+    bot.x = player.x + pDir.x * 200 + pPerp.x * 120;
+    bot.y = player.y + pDir.y * 200 + pPerp.y * 120;
+
     bot.segments = [];
     const bdv = DIR_VECTORS[(bot.dir + 2) % 4];
     for (let j = 0; j < 15; j++) {
@@ -7612,9 +7611,60 @@ function spawnTutorialKillBot() {
             y: bot.y + bdv.y * j * SEGMENT_SPACING,
         });
     }
-    bot.score = 30;
+
+    bot.score = 50;
+    bot.speed = BASE_SPEED * 0.7; // Slower so player can overtake
+    bot.tutorialFrozen = false;
+    bot.aiAggression = 0;
+    bot.updateAI = function () { }; // Override AI to just go straight
+
     tutorialDummyBot = bot;
     snakes.push(bot);
+}
+
+function resetTutorialKillScenario() {
+    if (!player) return;
+
+    if (!player.alive) {
+        player.alive = true;
+        deathScreen.classList.add('hidden');
+        hud.classList.remove('hidden');
+        deathTime = 0;
+    }
+
+    const dir = 0; // RIGHT
+    player.x = ARENA_SIZE / 2;
+    player.y = ARENA_SIZE / 2;
+    player.dir = dir;
+    player.nextDir = dir;
+    player.boostIntensity = 0;
+    player.boosting = false;
+    player.boostTimer = 0;
+    player.segments = [];
+
+    const dv = DIR_VECTORS[(dir + 2) % 4];
+    for (let i = 0; i < 15; i++) {
+        player.segments.push({
+            x: player.x + dv.x * i * SEGMENT_SPACING,
+            y: player.y + dv.y * i * SEGMENT_SPACING,
+        });
+    }
+
+    // camera
+    const lookAhead = 80 + BASE_SPEED * 25;
+    const pDv = DIR_VECTORS[player.dir];
+    camera.x = player.x + pDv.x * lookAhead;
+    camera.y = player.y + pDv.y * lookAhead;
+    camera.stX = camera.x;
+    camera.stY = camera.y;
+
+    // Clear bots & food so player doesn't get distracted
+    snakes = [player];
+    foods = [];
+    tutorialBoostBot = null;
+    tutorialDummyBot = null;
+
+    spawnTutorialKillBot();
 }
 
 function completeTutorial() {
