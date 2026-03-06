@@ -7710,10 +7710,6 @@ function performResetTutorialBoostScenario() {
 
 function spawnTutorialBoostBot() {
     // L-shaped bot geometry
-    // Math:
-    //   BASE_SPEED=3.2, moveAmount = speed * dt * 60 = 192 px/s
-    //   2 seconds = 384 px
-    //   SEGMENT_SPACING = 6, BOOST_PROXIMITY = 60
     if (!player) return;
 
     // Remove any previous boost bot
@@ -7722,11 +7718,9 @@ function spawnTutorialBoostBot() {
         tutorialBoostBot = null;
     }
 
-    const availableIndices = [];
-    for (let i = 0; i < SNAKE_STYLES.length; i++) {
-        if (i !== playerSnakeStyleIndex) availableIndices.push(i);
-    }
-    const idx = pick(availableIndices);
+    // Use high-visibility style: Plasma (index 4) or Neon Cyber (index 0)
+    let idx = 4; // PLASMA
+    if (playerSnakeStyleIndex === 4) idx = 0; // if player is Plasma, use NEON CYBER
     const style = SNAKE_STYLES[idx];
     const bot = new Snake(style.name, style, false);
 
@@ -7796,11 +7790,9 @@ function spawnTutorialBoostBot() {
 function spawnTutorialKillBot() {
     if (!player) return;
 
-    const availableIndices = [];
-    for (let i = 0; i < SNAKE_STYLES.length; i++) {
-        if (i !== playerSnakeStyleIndex) availableIndices.push(i);
-    }
-    const idx = pick(availableIndices);
+    // Use high-visibility style: Inferno (index 1) or Neon Cyber (index 0)
+    let idx = 1; // INFERNO
+    if (playerSnakeStyleIndex === 1) idx = 0; // if player is Inferno, use NEON CYBER
     const style = SNAKE_STYLES[idx];
     const bot = new Snake(style.name, style, false);
 
@@ -7906,10 +7898,9 @@ function setupTutorialSurvivalStep() {
 
     // Spawn a "bunch" of snakes (AI bots)
     const count = 12;
-    const availableIndices = [];
-    for (let i = 0; i < SNAKE_STYLES.length; i++) {
-        if (i !== playerSnakeStyleIndex) availableIndices.push(i);
-    }
+    // Use a curated list of very bright, high-visibility styles for the final tutorial challenge
+    const brightIndices = [0, 1, 3, 4, 5, 6, 7, 10, 14, 16, 17, 19, 21, 22, 25, 26, 27];
+    const availableIndices = brightIndices.filter(i => i !== playerSnakeStyleIndex && i < SNAKE_STYLES.length);
 
     // Simple shuffle
     availableIndices.sort(() => Math.random() - 0.5);
