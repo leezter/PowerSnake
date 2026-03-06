@@ -3565,6 +3565,7 @@ const tutorialButton = document.getElementById('tutorialButton');
 const tutorialTransitionOverlay = document.getElementById('tutorialTransitionOverlay');
 const transitionTextEl = document.getElementById('transitionText');
 const transitionDescEl = document.getElementById('transitionDesc');
+const transitionIconEl = document.getElementById('transitionIcon');
 
 let tutorialActive = false;
 let tutorialStep = -1;
@@ -3584,13 +3585,13 @@ let tutorialWasBoosting = false; // tracks if player was boosting last frame (fo
 
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
-    { message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 3.5, type: 'auto', transitionDesc: 'Welcome to the neon arena! Get ready to learn the ropes.' },
-    { message: 'BASIC MOVEMENT', subtext: 'Use the arrow keys, WASD, or the virtual joystick to steer.', duration: 0, type: 'action', transitionDesc: 'Learn how to steer your powerline and avoid crashing into the walls.' },
-    { message: 'GATHERING ENERGY', subtext: 'Consume 5 energy pellets to grow larger and increase your base speed.', duration: 0, type: 'action', transitionDesc: 'Collect 5 energy pellets to grow larger and boost your speed.' },
-    { message: '\u26A1 PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionDesc: 'Ride close to rival snakes to charge your incredible speed boost.' },
-    { message: 'COMBAT TACTICS', subtext: 'Cut off opponents to force them to crash into your body, turning them into food!', duration: 0, type: 'action', transitionDesc: 'Cut off enemies and force them to crash into you to steal their energy.' },
-    { message: '\u26A0\uFE0F KING OF THE ARENA', subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!', duration: 0, type: 'action', transitionDesc: 'Put it all together! Reach 100 points to conquer the arena.' },
-    { message: '\u{1F3C6} TUTORIAL COMPLETE!', subtext: 'Now go dominate the arena, King!', duration: 3.5, type: 'auto', transitionDesc: 'You are ready for the real thing. Dominate the arena!' }
+    { icon: '✦', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 3.5, type: 'auto', transitionDesc: 'Welcome to the neon arena! Get ready to learn the ropes.' },
+    { icon: '🕹️', message: 'BASIC MOVEMENT', subtext: 'Use WASD or Arrow Keys', duration: 0, type: 'action', transitionDesc: 'Learn how to steer your powerline and avoid crashing into the walls.' },
+    { icon: '🟢', message: 'GATHERING ENERGY', subtext: 'Energy Pellets: 0 / 5', duration: 0, type: 'action', transitionDesc: 'Collect 5 energy pellets to grow larger and boost your speed.' },
+    { icon: '⚡', message: 'PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionDesc: 'Ride close to rival snakes to charge your incredible speed boost.' },
+    { icon: '💀', message: 'COMBAT TACTICS', subtext: 'Cut off opponents to force them to crash into your body, turning them into food!', duration: 0, type: 'action', transitionDesc: 'Cut off enemies and force them to crash into you to steal their energy.' },
+    { icon: '👑', message: 'KING OF THE ARENA', subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!', duration: 0, type: 'action', transitionDesc: 'Put it all together! Reach 100 points to conquer the arena.' },
+    { icon: '🏆', message: 'TUTORIAL COMPLETE!', subtext: 'Now go dominate the arena, King!', duration: 3.5, type: 'auto', transitionDesc: 'You are ready for the real thing. Dominate the arena!' }
 ];
 
 // ---- Resize ----
@@ -5455,7 +5456,7 @@ function onPlayerDeath() {
             // Show a quick tip message
             if (tutorialMessageEl) {
                 tutorialMessageEl.textContent = 'OOPS! TRY AGAIN!';
-                tutorialSubtextEl.textContent = "Don't worry, you respawned!";
+                tutorialSubtextEl.textContent = "Don't worry—you've been respawned!";
             }
             // If on boost step, re-setup the boost scenario (preserving count)
             if (Math.floor(tutorialStep) === 3) {
@@ -7282,17 +7283,25 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
 
     if (transitionText) {
         transitionTextEl.textContent = transitionText;
-        transitionDescEl.textContent = transitionDesc || '';
+        transitionDescEl.textContent = transitionDesc || "";
+        // If retrying, use a retry-themed icon
+        if (transitionText.includes("RETRYING") || transitionText.includes("OOPS")) {
+            transitionIconEl.textContent = "🔄";
+        } else {
+            transitionIconEl.textContent = "⚡";
+        }
     } else {
         // Update transition screen text based on the upcoming step
         const nextStepIdx = Math.floor(tutorialStep) + 1;
         if (nextStepIdx < TUTORIAL_TOTAL_STEPS) {
             const nextStep = TUTORIAL_STEPS[nextStepIdx];
             transitionTextEl.textContent = nextStep.message;
-            transitionDescEl.textContent = nextStep.transitionDesc || '';
+            transitionDescEl.textContent = nextStep.transitionDesc || "";
+            transitionIconEl.textContent = nextStep.icon || "⚡";
         } else {
             transitionTextEl.textContent = "READY FOR BATTLE...";
-            transitionDescEl.textContent = '';
+            transitionDescEl.textContent = "";
+            transitionIconEl.textContent = "⚔️";
         }
     }
 
@@ -7437,7 +7446,7 @@ function updateTutorial(dt) {
             if (player && !tutorialStepAdvancePending) {
                 // Track food by monitoring player score changes
                 const needed = 5;
-                tutorialSubtextEl.textContent = `Energy Pellets: ${Math.min(player.score, needed)} / ${needed}`;
+                tutorialSubtextEl.textContent = `ENERGY COLLECTED: ${Math.min(player.score, needed)} / ${needed}`;
                 if (player.score >= needed) {
                     tutorialStepAdvancePending = true;
                     setTimeout(() => advanceTutorialStep(), 600);
@@ -7488,7 +7497,7 @@ function updateTutorial(dt) {
                     // Still boosting, update display
                     tutorialSubtextEl.textContent = `\u26A1 BOOSTING! (${tutorialBoostCount}/3)`;
                 } else if (!isBoosting && tutorialBoostCount > 0 && tutorialBoostCount < 3) {
-                    tutorialSubtextEl.textContent = `Slither close and parallel to another snake to build up a speed boost! (${tutorialBoostCount}/3)`;
+                    tutorialSubtextEl.textContent = `Slither close and parallel to another snake to charge your boost! (${tutorialBoostCount}/3)`;
                 }
                 tutorialWasBoosting = isBoosting;
             }
@@ -7516,7 +7525,7 @@ function updateTutorial(dt) {
                     // Check if the dummy bot was killed
                     if (tutorialDummyBot && !tutorialDummyBot.alive) {
                         if (tutorialDummyBot.killedBy === player) {
-                            tutorialSubtextEl.textContent = '💥 ELIMINATED!';
+                            tutorialSubtextEl.textContent = '\u{1F4A5} ELIMINATED!';
                             tutorialStepAdvancePending = true;
                             setTimeout(() => advanceTutorialStep(), 1200);
                         } else {
@@ -7624,7 +7633,7 @@ function performResetTutorialBoostScenario() {
     camera.stX = camera.x;
     camera.stY = camera.y;
 
-    tutorialSubtextEl.textContent = `Slither close and parallel to another snake to build up a speed boost! (${tutorialBoostCount}/3)`;
+    tutorialSubtextEl.textContent = `Slither close and parallel to another snake to charge your boost! (${tutorialBoostCount}/3)`;
 }
 
 function spawnTutorialBoostBot() {

@@ -1319,10 +1319,11 @@ body::before {
 /* Tutorial subtext */
 .tutorial-subtext {
     font-family: var(--font-body);
-    font-size: 0.85rem;
-    letter-spacing: 1px;
-    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.7);
     min-height: 1.2em;
+    line-height: 1.45;
 }
 
 /* Message transition animation */
@@ -1448,13 +1449,33 @@ body::before {
 
 .transition-text {
     font-family: var(--font-display);
-    font-size: 1.8rem;
+    font-size: 1.9rem;
     font-weight: 900;
     letter-spacing: 5px;
     color: #fff;
     text-transform: uppercase;
+    margin-bottom: 12px;
+    text-shadow:
+        0 0 20px rgba(0, 240, 255, 0.45),
+        0 0 40px rgba(0, 240, 255, 0.2),
+        0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.transition-desc {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 400;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.65);
+    margin-bottom: 32px;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+}
+
+.transition-desc:empty {
     margin-bottom: 30px;
-    text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
 .transition-bar-container {
