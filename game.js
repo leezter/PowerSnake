@@ -3568,6 +3568,8 @@ const tutorialTransitionOverlay = document.getElementById('tutorialTransitionOve
 const transitionTextEl = document.getElementById('transitionText');
 const transitionDescEl = document.getElementById('transitionDesc');
 const transitionIconEl = document.getElementById('transitionIcon');
+const transitionBarContainer = document.getElementById('transitionBarContainer');
+const transitionContinue = document.getElementById('transitionContinue');
 
 let tutorialActive = false;
 let tutorialStep = -1;
@@ -7303,6 +7305,11 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
     if (tutorialInTransition) return;
     tutorialInTransition = true;
 
+    // Reset transition UI state
+    if (transitionBarContainer) transitionBarContainer.classList.remove('hidden');
+    if (transitionContinue) transitionContinue.classList.add('hidden');
+    tutorialTransitionOverlay.onclick = null; // Clear previous listener
+
     if (transitionText) {
         transitionTextEl.textContent = transitionText;
         transitionDescEl.textContent = transitionDesc || "";
@@ -7368,10 +7375,21 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
             snakes.unshift(player);
         }
 
-        // Short delay so they see the result of the setup through the blur/overlay before it fades
-        setTimeout(() => {
+        // --- NEW: Transition Ready State ---
+        // Hide loading bar and show "Tap to continue" prompt
+        if (transitionBarContainer) transitionBarContainer.classList.add('hidden');
+        if (transitionContinue) transitionContinue.classList.remove('hidden');
+
+        // Add dismiss listener
+        tutorialTransitionOverlay.onclick = () => {
+            tutorialTransitionOverlay.onclick = null; // Prevent double trigger
             tutorialInTransition = false;
             tutorialTransitionOverlay.classList.add('hidden');
+
+            // Play a small click/confirm sound
+            if (soundManager && soundManager.ctx) {
+                soundManager.playTone({ freq: 600, type: 'triangle', duration: 0.1, vol: 0.2, slide: 100 });
+            }
 
             // Resume game if still in tutorial and NOT in the final message step (which should stay frozen)
             if (tutorialActive && tutorialStep < TUTORIAL_TOTAL_STEPS - 1) {
@@ -7379,7 +7397,7 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
                 lastTime = performance.now();
                 requestAnimationFrame(gameLoop);
             }
-        }, 1000);
+        };
     }, 1500);
 }
 

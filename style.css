@@ -1486,6 +1486,11 @@ body::before {
     margin: 0 auto;
     overflow: hidden;
     position: relative;
+    transition: opacity 0.4s ease;
+}
+
+.transition-bar-container.hidden {
+    opacity: 0;
 }
 
 .transition-bar {
@@ -1505,6 +1510,39 @@ body::before {
 
     100% {
         left: 100%;
+    }
+}
+
+.transition-continue {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--neon-cyan);
+    margin-top: 30px;
+    text-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    animation: continuePulse 1.5s infinite ease-in-out;
+    cursor: pointer;
+    transition: opacity 0.8s ease;
+}
+
+.transition-continue.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+@keyframes continuePulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+        text-shadow: 0 0 25px rgba(0, 240, 255, 0.8);
     }
 }
 
