@@ -3980,9 +3980,10 @@ class Snake {
         return false;
     }
 
-    die() {
+    die(killer = null) {
         if (!this.alive) return;
         this.alive = false;
+        this.killedBy = killer;
         if (this.isPlayer) {
             screenShake = 25; // Massive shake
             soundManager.playDie();
@@ -4275,7 +4276,7 @@ function checkCollisions() {
 
         // Wall collision (simple check)
         if (hx < 0 || hx > ARENA_SIZE || hy < 0 || hy > ARENA_SIZE) {
-            snake.die();
+            snake.die('wall');
             if (snake.isPlayer) onPlayerDeath();
             continue;
         }
@@ -4289,7 +4290,7 @@ function checkCollisions() {
                 const distSq = distToSegmentSquared({ x: other.x, y: other.y }, { x: lastX, y: lastY }, { x: hx, y: hy });
                 const hitDist = (snake.width + other.width) * 0.4;
                 if (distSq < hitDist * hitDist) {
-                    snake.die();
+                    snake.die(other);
                     // Play kill success sound if player killed someone
                     if (other.isPlayer) {
                         soundManager.playKill();
@@ -4316,7 +4317,7 @@ function checkCollisions() {
                 const hitDist = (snake.width + other.width) * 0.4;
 
                 if (distSq < hitDist * hitDist) {
-                    snake.die();
+                    snake.die(other);
                     if (other.isPlayer) {
                         soundManager.playKill();
                         screenShake = 15; // Rewarding shake
@@ -4342,7 +4343,7 @@ function checkCollisions() {
             const hitDist = snake.width * 0.5;
 
             if (distSq < hitDist * hitDist) {
-                snake.die();
+                snake.die('self');
                 if (snake.isPlayer) onPlayerDeath();
                 break;
             }
@@ -7408,13 +7409,15 @@ function updateTutorial(dt) {
                     }
                     // Check if the dummy bot was killed
                     if (tutorialDummyBot && !tutorialDummyBot.alive) {
-                        tutorialSubtextEl.textContent = '💥 ELIMINATED!';
-                        tutorialStepAdvancePending = true;
-                        setTimeout(() => advanceTutorialStep(), 1200);
-                    }
-                    // Auto-advance after 25s (fallback)
-                    if (tutorialStepTimer > 25) {
-                        advanceTutorialStep();
+                        if (tutorialDummyBot.killedBy === player) {
+                            tutorialSubtextEl.textContent = '💥 ELIMINATED!';
+                            tutorialStepAdvancePending = true;
+                            setTimeout(() => advanceTutorialStep(), 1200);
+                        } else {
+                            // If the bot died by crashing into a wall, restart
+                            resetTutorialKillScenario();
+                            break;
+                        }
                     }
                 }
             }
@@ -7645,9 +7648,13 @@ function resetTutorialKillScenario() {
     player.y = ARENA_SIZE / 2;
     player.dir = dir;
     player.nextDir = dir;
+    player.score = 0;
+    player.foodEaten = 10; // Give a slight speed advantage for target practice
+    player.speed = BASE_SPEED * 1.2;
     player.boostIntensity = 0;
     player.boosting = false;
     player.boostTimer = 0;
+    player.headScale = 1.0;
     player.segments = [];
 
     const dv = DIR_VECTORS[(dir + 2) % 4];
