@@ -3562,6 +3562,8 @@ const tutorialSubtextEl = document.getElementById('tutorialSubtext');
 const tutorialStepIndicator = document.getElementById('tutorialStepIndicator');
 const skipTutorialButton = document.getElementById('skipTutorialButton');
 const tutorialButton = document.getElementById('tutorialButton');
+const tutorialCompleteScreen = document.getElementById('tutorialCompleteScreen');
+const tcContinueButton = document.getElementById('tcContinueButton');
 const tutorialTransitionOverlay = document.getElementById('tutorialTransitionOverlay');
 const transitionTextEl = document.getElementById('transitionText');
 const transitionDescEl = document.getElementById('transitionDesc');
@@ -7371,17 +7373,30 @@ function performStepAdvance() {
         return;
     }
 
-    // Stop game loop specifically for the final completion message step to prevent background issues
+    // When reaching the final step, stop the game and show the new completion screen
     if (tutorialStep === TUTORIAL_TOTAL_STEPS - 1) {
         gameRunning = false;
-        // Since the game loop is stopped, updateTutorial won't advance this step automatically.
-        // We must set a manual timeout to complete the tutorial.
-        const stepDisplayDuration = (TUTORIAL_STEPS[tutorialStep].duration || 3.5) * 1000;
-        setTimeout(() => {
-            if (tutorialActive && tutorialStep === TUTORIAL_TOTAL_STEPS - 1) {
-                completeTutorial();
-            }
-        }, stepDisplayDuration);
+
+        // Hide standard tutorial overlay
+        tutorialOverlay.classList.add('hidden');
+
+        // Show new completion screen
+        if (tutorialCompleteScreen) tutorialCompleteScreen.classList.remove('hidden');
+
+        // Fade out arena
+        if (canvas) canvas.classList.add('arena-fade-out');
+        if (hud) hud.classList.add('arena-fade-out');
+
+        // Play fanfare immediately when the screen pops up
+        if (soundManager && soundManager.ctx) {
+            if (soundManager.ctx.state === 'suspended') soundManager.resume();
+            soundManager.playTone({ freq: 523, type: 'triangle', duration: 0.15, vol: 0.25, slide: 100, pan: -0.3 });
+            setTimeout(() => soundManager.playTone({ freq: 659, type: 'triangle', duration: 0.15, vol: 0.25, slide: 100, pan: 0 }), 100);
+            setTimeout(() => soundManager.playTone({ freq: 784, type: 'triangle', duration: 0.2, vol: 0.3, slide: 100, pan: 0.3 }), 200);
+            setTimeout(() => soundManager.playTone({ freq: 1047, type: 'sine', duration: 0.4, vol: 0.2, slide: 50, pan: 0 }), 350);
+        }
+
+        return; // Early return to bypass normal step UI logic
     }
 
     const step = TUTORIAL_STEPS[tutorialStep];
@@ -7424,10 +7439,6 @@ function performStepAdvance() {
     }
     if (tutorialStep === 5) {
         setupTutorialSurvivalStep();
-    }
-    if (tutorialStep === 6) {
-        // Obscure the live arena entirely during the final message
-        tutorialOverlay.classList.add('tutorial-black-bg');
     }
 }
 
@@ -7897,6 +7908,9 @@ function completeTutorial() {
     gameRunning = false; // Stop the arena immediately and keep it stopped
     tutorialActive = false;
     tutorialOverlay.classList.add('hidden');
+    if (tutorialCompleteScreen) tutorialCompleteScreen.classList.add('hidden');
+    if (canvas) canvas.classList.remove('arena-fade-out');
+    if (hud) hud.classList.remove('arena-fade-out');
 
     // Add completion animation
     tutorialMessageBox.classList.add('completed');
@@ -7929,14 +7943,7 @@ function completeTutorial() {
         goToHomeScreen();
     }
 
-    // Play completion fanfare
-    if (soundManager && soundManager.ctx) {
-        if (soundManager.ctx.state === 'suspended') soundManager.resume();
-        soundManager.playTone({ freq: 523, type: 'triangle', duration: 0.15, vol: 0.25, slide: 100, pan: -0.3 });
-        setTimeout(() => soundManager.playTone({ freq: 659, type: 'triangle', duration: 0.15, vol: 0.25, slide: 100, pan: 0 }), 100);
-        setTimeout(() => soundManager.playTone({ freq: 784, type: 'triangle', duration: 0.2, vol: 0.3, slide: 100, pan: 0.3 }), 200);
-        setTimeout(() => soundManager.playTone({ freq: 1047, type: 'sine', duration: 0.4, vol: 0.2, slide: 50, pan: 0 }), 350);
-    }
+    // Fanfare now plays when the completion screen appears in performStepAdvance()
 }
 
 function skipTutorial() {
@@ -7952,6 +7959,13 @@ if (skipTutorialButton) {
     skipTutorialButton.addEventListener('click', (e) => {
         e.stopPropagation();
         skipTutorial();
+    });
+}
+
+// Tutorial Complete Continue button
+if (tcContinueButton) {
+    tcContinueButton.addEventListener('click', () => {
+        completeTutorial();
     });
 }
 

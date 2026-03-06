@@ -1790,3 +1790,238 @@ body::before {
         font-size: 0.72rem;
     }
 }
+
+/* ============================================
+   Tutorial Complete Screen
+   ============================================ */
+#tutorialCompleteScreen {
+    z-index: 200;
+    /* Above everything */
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+    transition: opacity 0.5s ease;
+}
+
+.tutorial-complete-content {
+    position: relative;
+    text-align: center;
+    padding: 60px 40px;
+    width: 90%;
+    max-width: 600px;
+    background: linear-gradient(135deg, rgba(20, 20, 40, 0.95), rgba(5, 5, 15, 0.98));
+    border: 2px solid var(--neon-cyan);
+    border-radius: 20px;
+    box-shadow:
+        0 0 50px rgba(0, 240, 255, 0.3),
+        inset 0 0 30px rgba(0, 240, 255, 0.1);
+    overflow: hidden;
+    animation: tcPopIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes tcPopIn {
+    0% {
+        transform: scale(0.5) translateY(50px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+.tc-rays {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(from 0deg,
+            transparent 0deg 15deg,
+            rgba(0, 240, 255, 0.05) 15deg 30deg,
+            transparent 30deg 45deg,
+            rgba(255, 0, 229, 0.05) 45deg 60deg,
+            transparent 60deg 75deg,
+            rgba(0, 240, 255, 0.05) 75deg 90deg,
+            transparent 90deg 105deg,
+            rgba(255, 0, 229, 0.05) 105deg 120deg,
+            transparent 120deg 135deg,
+            rgba(0, 240, 255, 0.05) 135deg 150deg,
+            transparent 150deg 165deg,
+            rgba(255, 0, 229, 0.05) 165deg 180deg,
+            transparent 180deg 195deg,
+            rgba(0, 240, 255, 0.05) 195deg 210deg,
+            transparent 210deg 225deg,
+            rgba(255, 0, 229, 0.05) 225deg 240deg,
+            transparent 240deg 255deg,
+            rgba(0, 240, 255, 0.05) 255deg 270deg,
+            transparent 270deg 285deg,
+            rgba(255, 0, 229, 0.05) 285deg 300deg,
+            transparent 300deg 315deg,
+            rgba(0, 240, 255, 0.05) 315deg 330deg,
+            transparent 330deg 345deg,
+            rgba(255, 0, 229, 0.05) 345deg 360deg);
+    transform-origin: center;
+    animation: tcSpin 20s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+@keyframes tcSpin {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+.tc-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.tc-particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    border-radius: 50%;
+    animation: tcParticleFloat 3s linear forwards;
+}
+
+@keyframes tcParticleFloat {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-100px) scale(0);
+        opacity: 0;
+    }
+}
+
+.tc-icon-container {
+    position: relative;
+    z-index: 2;
+    margin-bottom: 20px;
+    display: inline-block;
+}
+
+.tc-icon {
+    font-size: 5rem;
+    filter: drop-shadow(0 0 20px rgba(255, 230, 0, 0.8));
+    animation: tcPulseIcon 2s infinite ease-in-out;
+}
+
+@keyframes tcPulseIcon {
+
+    0%,
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 20px rgba(255, 230, 0, 0.8));
+    }
+
+    50% {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 40px rgba(255, 230, 0, 1));
+    }
+}
+
+.tc-title {
+    position: relative;
+    z-index: 2;
+    font-family: var(--font-display);
+    font-size: 2.8rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    margin-bottom: 15px;
+    background: linear-gradient(to right, var(--neon-cyan), var(--neon-magenta), var(--neon-yellow));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    animation: tcTitleShine 3s linear infinite;
+    background-size: 200% auto;
+}
+
+@keyframes tcTitleShine {
+    to {
+        background-position: 200% center;
+    }
+}
+
+.tc-desc {
+    position: relative;
+    z-index: 2;
+    font-size: 1.2rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 40px;
+    font-weight: 600;
+}
+
+.tc-desc .accent {
+    font-size: 1.4rem;
+    color: var(--neon-magenta);
+    text-shadow: 0 0 10px rgba(255, 0, 229, 0.5);
+    display: block;
+    margin-top: 10px;
+}
+
+.tc-btn {
+    position: relative;
+    z-index: 2;
+    font-size: 1.5rem;
+    padding: 20px 40px;
+    box-shadow:
+        0 0 20px rgba(0, 240, 255, 0.6),
+        inset 0 0 10px rgba(255, 255, 255, 0.5);
+    animation: tcBtnPulse 2s infinite;
+}
+
+@keyframes tcBtnPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 40px rgba(0, 240, 255, 0.9), inset 0 0 20px rgba(255, 255, 255, 0.8);
+    }
+}
+
+@media (max-width: 480px) and (orientation: portrait) {
+    .tc-title {
+        font-size: 2rem;
+        letter-spacing: 2px;
+    }
+
+    .tutorial-complete-content {
+        padding: 40px 20px;
+    }
+
+    .tc-icon {
+        font-size: 4rem;
+    }
+
+    .tc-btn {
+        font-size: 1.2rem;
+        padding: 15px 20px;
+    }
+}
+
+/* Arena fade out */
+.arena-fade-out {
+    opacity: 0.3 !important;
+    filter: blur(10px) grayscale(50%) !important;
+    transition: opacity 1.5s ease, filter 1.5s ease !important;
+}
