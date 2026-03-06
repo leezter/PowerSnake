@@ -3583,13 +3583,13 @@ let tutorialWasBoosting = false; // tracks if player was boosting last frame (fo
 
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
-    { message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed neon snake action...', duration: 3.5, type: 'auto' },
-    { message: 'MOVE YOUR SNAKE', subtext: 'Use keys or joystick to navigate the arena', duration: 0, type: 'action' },
-    { message: 'EAT TO GROW!', subtext: 'Collect 5 energy pellets to increase your size', duration: 0, type: 'action' },
-    { message: '\u26A1 THE BOOST ZONE', subtext: 'Run parallel to another snake to trigger a speed boost! (0/3)', duration: 0, type: 'action' },
-    { message: 'ELIMINATE RIVALS!', subtext: 'Intercept enemies to turn them into energy pellets!', duration: 0, type: 'action' },
-    { message: '\u26A0\uFE0F ULTIMATE CHALLENGE!', subtext: 'Reach 100 points to conquer the arena. Unlock 70+ unique snakes!', duration: 0, type: 'action' },
-    { message: '\u{1F3C6} TUTORIAL COMPLETE!', subtext: 'Go dominate the arena, King!', duration: 3.5, type: 'auto' }
+    { message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 3.5, type: 'auto' },
+    { message: 'BASIC MOVEMENT', subtext: 'Use the arrow keys, WASD, or the virtual joystick to steer.', duration: 0, type: 'action' },
+    { message: 'GATHERING ENERGY', subtext: 'Consume 5 energy pellets to grow larger and increase your base speed.', duration: 0, type: 'action' },
+    { message: '\u26A1 PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action' },
+    { message: 'COMBAT TACTICS', subtext: 'Cut off opponents to force them to crash into your body, turning them into food!', duration: 0, type: 'action' },
+    { message: '\u26A0\uFE0F KING OF THE ARENA', subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!', duration: 0, type: 'action' },
+    { message: '\u{1F3C6} TUTORIAL COMPLETE!', subtext: 'Now go dominate the arena, King!', duration: 3.5, type: 'auto' }
 ];
 
 // ---- Resize ----
@@ -5462,7 +5462,7 @@ function onPlayerDeath() {
                     if (tutorialActive && Math.floor(tutorialStep) === 3) {
                         spawnTutorialBoostBot();
                         tutorialMessageEl.textContent = TUTORIAL_STEPS[3].message;
-                        tutorialSubtextEl.textContent = `Run alongside another snake to boost! (${tutorialBoostCount}/3)`;
+                        tutorialSubtextEl.textContent = `Slither close and parallel to another snake to build up a speed boost! (${tutorialBoostCount}/3)`;
                     }
                 }, 1500);
             } else {
@@ -7263,9 +7263,10 @@ function startTutorial(isReplay) {
 function advanceTutorialStep() {
     if (!tutorialActive) return;
 
-    // If it's the very first step (-1 to 0), just advance.
+    // If it's the very first step (-1 to 0) or the last step (completion), just advance.
     // Otherwise, show the transition screen.
-    if (tutorialStep === -1) {
+    const nextStepIdx = Math.floor(tutorialStep) + 1;
+    if (tutorialStep === -1 || nextStepIdx >= TUTORIAL_TOTAL_STEPS - 1) {
         performStepAdvance();
     } else {
         showTutorialTransition(() => {
@@ -7285,7 +7286,7 @@ function showTutorialTransition(callback, transitionText = null) {
         const nextStepIdx = Math.floor(tutorialStep) + 1;
         if (nextStepIdx < TUTORIAL_TOTAL_STEPS) {
             const nextStep = TUTORIAL_STEPS[nextStepIdx];
-            transitionTextEl.textContent = `NEXT: ${nextStep.message}`;
+            transitionTextEl.textContent = nextStep.message;
         } else {
             transitionTextEl.textContent = "READY FOR BATTLE...";
         }
@@ -7458,7 +7459,7 @@ function updateTutorial(dt) {
                 }
 
                 if (shouldReset) {
-                    resetTutorialBoostScenario("RETURNING TO START...");
+                    resetTutorialBoostScenario("SPEED LOST! RETRYING...");
                     break;
                 }
 
@@ -7476,14 +7477,14 @@ function updateTutorial(dt) {
                         tutorialStepAdvancePending = true;
                         setTimeout(() => {
                             tutorialStepAdvancePending = false;
-                            resetTutorialBoostScenario("NEXT CHALLENGE...");
+                            resetTutorialBoostScenario("NICE! NEXT LAP...");
                         }, 3000);
                     }
                 } else if (isBoosting) {
                     // Still boosting, update display
                     tutorialSubtextEl.textContent = `\u26A1 BOOSTING! (${tutorialBoostCount}/3)`;
                 } else if (!isBoosting && tutorialBoostCount > 0 && tutorialBoostCount < 3) {
-                    tutorialSubtextEl.textContent = `Run parallel to another snake to boost! (${tutorialBoostCount}/3)`;
+                    tutorialSubtextEl.textContent = `Slither close and parallel to another snake to build up a speed boost! (${tutorialBoostCount}/3)`;
                 }
                 tutorialWasBoosting = isBoosting;
             }
@@ -7497,14 +7498,14 @@ function updateTutorial(dt) {
             {
                 if (!tutorialStepAdvancePending) {
                     if (!player.alive) {
-                        resetTutorialKillScenario("YOU PERISHED! TRY AGAIN...");
+                        resetTutorialKillScenario("YOU DIED! RETRYING...");
                         break;
                     }
                     if (tutorialDummyBot && tutorialDummyBot.alive) {
                         const dx = player.x - tutorialDummyBot.x;
                         const dy = player.y - tutorialDummyBot.y;
                         if (dx * dx + dy * dy > 1500 * 1500) {
-                            resetTutorialKillScenario("RIVAL ESCAPED! LET'S RESET...");
+                            resetTutorialKillScenario("RIVAL ESCAPED! RETRYING...");
                             break;
                         }
                     }
@@ -7516,7 +7517,7 @@ function updateTutorial(dt) {
                             setTimeout(() => advanceTutorialStep(), 1200);
                         } else {
                             // If the bot died by crashing into a wall, restart
-                            resetTutorialKillScenario("RIVAL CRASHED! TRY AGAIN...");
+                            resetTutorialKillScenario("RIVAL CRASHED! RETRYING...");
                             break;
                         }
                     }
@@ -7619,7 +7620,7 @@ function performResetTutorialBoostScenario() {
     camera.stX = camera.x;
     camera.stY = camera.y;
 
-    tutorialSubtextEl.textContent = `Run alongside another snake to boost! (${tutorialBoostCount}/3)`;
+    tutorialSubtextEl.textContent = `Slither close and parallel to another snake to build up a speed boost! (${tutorialBoostCount}/3)`;
 }
 
 function spawnTutorialBoostBot() {
