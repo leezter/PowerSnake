@@ -3585,7 +3585,7 @@ const TUTORIAL_STEPS = [
     { message: 'EAT FOOD TO GROW!', subtext: 'Collect 5 food pellets', duration: 0, type: 'action' },
     { message: '\u26A1 SPEED BOOST', subtext: 'Run alongside another snake to boost! (0/3)', duration: 0, type: 'action' },
     { message: 'ELIMINATE RIVALS!', subtext: 'Cut off the enemy snake to destroy it!', duration: 0, type: 'action' },
-    { message: '\u26A0\uFE0F STAY ALIVE!', subtext: 'Avoid walls and other snakes \u2014 death resets everything!', duration: 4.0, type: 'auto' },
+    { message: '\u26A0\uFE0F SURVIVE & CONQUER!', subtext: 'Survival is key! Eat to grow, dominate the arena, and become the King. Over 70 unique snakes can be unlocked!', duration: 0, type: 'action' },
     { message: '\u{1F3C6} YOU\'RE READY!', subtext: 'Go dominate the neon arena!', duration: 3.5, type: 'auto' }
 ];
 
@@ -7291,6 +7291,10 @@ function advanceTutorialStep() {
         // Prepare scenario for kill demo
         resetTutorialKillScenario();
     }
+    if (tutorialStep === 5) {
+        // Final survival challenge
+        setupTutorialSurvivalStep();
+    }
 }
 
 function updateTutorialDots() {
@@ -7423,8 +7427,16 @@ function updateTutorial(dt) {
             }
             break;
 
-        case 5: // Survive warning — auto advance
-            if (tutorialStepTimer >= step.duration) advanceTutorialStep();
+        case 5: // Survive & Conquer
+            if (player && !tutorialStepAdvancePending) {
+                const target = 100;
+                tutorialSubtextEl.textContent = `Reach ${target} points! (${Math.min(player.score, target)}/${target})`;
+                if (player.score >= target) {
+                    tutorialSubtextEl.textContent = '\u{1F451} ARENA CONQUERED!';
+                    tutorialStepAdvancePending = true;
+                    setTimeout(() => advanceTutorialStep(), 1500);
+                }
+            }
             break;
 
         case 6: // Ready — auto advance
@@ -7680,6 +7692,59 @@ function resetTutorialKillScenario() {
     tutorialDummyBot = null;
 
     spawnTutorialKillBot();
+}
+
+function setupTutorialSurvivalStep() {
+    if (!player) return;
+
+    // Reset player score and length for the final challenge
+    player.score = 0;
+    player.foodEaten = 0;
+
+    // Clear arena for a fresh start, but keep player
+    snakes = [player];
+    foods = [];
+    particles = [];
+
+    // Spawn plenty of food
+    spawnFood(120);
+
+    // Spawn a "bunch" of snakes (AI bots)
+    const count = 12;
+    const availableIndices = [];
+    for (let i = 0; i < SNAKE_STYLES.length; i++) {
+        if (i !== playerSnakeStyleIndex) availableIndices.push(i);
+    }
+
+    // Simple shuffle
+    availableIndices.sort(() => Math.random() - 0.5);
+
+    for (let i = 0; i < count; i++) {
+        const style = SNAKE_STYLES[availableIndices[i % availableIndices.length]];
+        const bot = new Snake(style.name, style, false);
+
+        // Give bots some size
+        bot.score = randInt(25, 120);
+        // Add segments
+        const extra = Math.floor(bot.score / 5);
+        const dv = DIR_VECTORS[(bot.dir + 2) % 4];
+        for (let j = 0; j < extra; j++) {
+            const lastSeg = bot.segments[bot.segments.length - 1];
+            bot.segments.push({
+                x: lastSeg.x + dv.x * SEGMENT_SPACING,
+                y: lastSeg.y + dv.y * SEGMENT_SPACING,
+            });
+        }
+
+        // Ensure they aren't spawning right on top of player
+        if (dist(bot, player) < 1000) {
+            const angle = Math.random() * Math.PI * 2;
+            bot.x = player.x + Math.cos(angle) * 1200;
+            bot.y = player.y + Math.sin(angle) * 1200;
+        }
+
+        snakes.push(bot);
+    }
 }
 
 function completeTutorial() {
