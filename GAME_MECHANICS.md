@@ -223,3 +223,97 @@ Each major game event has **11 distinct varieties** (0-10) that are randomly sel
 ### 5.2 Musical Logic
 *   **Scales:** The `SoundManager` defines 11 musical scales/modes (e.g., Major Pentatonic, Lydian, Dorian, Phrygian Dominant) used primarily by the Collect SFX to ensure all notes sound harmonious within their style.
 *   **Synthesis:** Sounds are synthesized using oscillator nodes (sine, square, sawtooth, triangle) and noise buffers, shaped with gain envelopes (ADSR) and filters.
+
+## 6. Tutorial System
+
+The game includes an interactive tutorial that activates for first-time players and can be replayed from the main menu.
+
+### 6.1 Architecture
+
+The tutorial runs as a **state machine** (`tutorialStep` 0–6) on top of the normal game loop. When `tutorialActive` is true, `updateTutorial(dt)` is called each frame from `gameLoop`. A `switch(tutorialStep)` drives step-specific logic.
+
+**Key Functions:**
+| Function | Purpose |
+|---|---|
+| `startTutorial(isReplay)` | Initializes empty arena with only the player, sets up tutorial UI, starts step -1 |
+| `advanceTutorialStep()` | Increments step (via `Math.floor + 1`), updates messages/dots, runs step-specific spawning |
+| `updateTutorial(dt)` | Per-frame step logic — checks action triggers, timers, boost counts |
+| `completeTutorial()` | Marks completion in localStorage, unlocks next Common snake (first time only) |
+| `skipTutorial()` | Returns to main menu without marking completion |
+| `spawnTutorialFood()` | Spawns 7 food pellets in a ring around the player (200–500px) |
+| `spawnTutorialBoostBot()` | Spawns a frozen L-shaped bot for boost practice |
+| `resetTutorialBoostScenario()` | Resets player + bot positions when bot dies during boost step |
+| `spawnTutorialKillBot()` | Spawns a slow bot on a perpendicular path for kill practice |
+
+### 6.2 Step Sequence
+
+| Step | Type | Trigger | Arena Changes |
+|---|---|---|---|
+| 0 — Welcome | Auto (3s) | Timer | Empty arena, player only |
+| 1 — Move | Action | Player changes direction | No changes |
+| 2 — Eat Food | Action | `player.score >= 5` | `spawnTutorialFood()` — 7 scattered pellets |
+| 3 — Speed Boost | Action | 3 separate boosts (rising-edge detected) | `spawnTutorialBoostBot()` — frozen L-shaped bot |
+| 4 — Eliminate | Action | Any bot killed | `spawnTutorialKillBot()` — slow perpendicular bot |
+| 5 — Stay Alive | Auto (4s) | Timer | No changes |
+| 6 — Ready | Auto (3.5s) | Timer → `completeTutorial()` | No changes |
+
+### 6.3 Progressive Arena Population
+
+The arena starts **completely empty** — no food, no bots. Elements are spawned only when the relevant step begins. The `maintainFood()` function is suppressed during steps 0–1 to prevent random food from appearing.
+
+### 6.4 Boost Bot Geometry
+
+The boost bot is spawned as a **frozen** (`tutorialFrozen = true`) L-shaped snake. Frozen bots skip both AI (`updateAI`) and movement in `Snake.update()`, staying exactly where placed.
+
+**L-Shape Layout (player faces RIGHT):**
+```
+Player --->..............corner==============================> Bot Head
+             384px        |   (parallel section, 40px offset below)
+            (2 seconds)   |   (player is 40px away = within BOOST_PROXIMITY 60px)
+                          (perpendicular tail, extends AWAY from player)
+```
+
+**Math:**
+- `BASE_SPEED × 60 = 192 px/s` → 2 seconds = **384px** ahead
+- Corner position: `player + playerDir × 384 + perpDir × 40`
+- Parallel section: 200 segments (1200px) extending forward from corner
+- Perpendicular section: 30 segments extending in `perpDir` (AWAY from player path)
+- Side offset: 40px (within `BOOST_PROXIMITY` of 60px, won't trigger collision)
+
+**Boost Detection:** Rising-edge detection via `tutorialWasBoosting` flag — only counts a new boost when `boostIntensity` crosses above 0.1 after being below. Requires 3 boosts to advance. Count is preserved across deaths.
+
+### 6.5 Death During Tutorial
+
+When the player dies during the tutorial, `onPlayerDeath()` respawns them after 800ms instead of showing the death screen. For the boost step specifically, `resetTutorialBoostScenario()` also repositions the player to center and respawns the boost bot after 1500ms, preserving the `tutorialBoostCount`.
+
+### 6.6 Tutorial Completion & Unlock Reward
+
+On first completion (`tutorialIsReplay === false`):
+1. Sets `ps_tutorial_completed = true` in `localStorage`
+2. Finds the next Common snake (tier index 1) in `UNLOCK_ORDER` that isn't unlocked
+3. If found, unlocks it and shows the unlock celebration (`showUnlockCelebration`)
+
+The `📖 TUTORIAL` button on the main menu calls `startTutorial(true)` (replay mode) — no unlock reward is given on replays.
+
+### 6.7 State Variables
+
+| Variable | Purpose |
+|---|---|
+| `tutorialActive` | Master flag — enables tutorial logic in game loop |
+| `tutorialStep` | Current step index (-1 to 6) |
+| `tutorialStepTimer` | Accumulated time in current step |
+| `tutorialCompleted` | Loaded from `localStorage` on init |
+| `tutorialIsReplay` | True when replaying from menu button |
+| `tutorialStepAdvancePending` | Prevents re-triggering during delayed `setTimeout` advances |
+| `tutorialBoostCount` | Boosts completed in step 3 (0–3), preserved on death |
+| `tutorialBoostBot` | Reference to the frozen boost bot snake |
+| `tutorialWasBoosting` | Previous frame's boost state for rising-edge detection |
+| `tutorialDummyBot` | Reference to the kill-step target bot |
+
+### 6.8 HTML & CSS
+
+- `#tutorialOverlay` — Full-screen overlay containing message box and skip button
+- `#tutorialMessageBox` — Glassmorphism panel with step message, subtext, and progress dots
+- `#skipTutorialButton` — Fixed bottom-right, low-opacity, returns to main menu
+- `#tutorialButton` — Main menu top-right, opens tutorial replay
+- Animations: `tutorial-slide-in`, `step-transition` (pulse on step change)

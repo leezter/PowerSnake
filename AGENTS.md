@@ -29,7 +29,7 @@ Or double-click `index.html` in Explorer. No `npm install`, no `npm start`, no `
 | `style.css` | All styling, including responsive breakpoints |
 | `game.js` | All game logic (snakes, AI, rendering, progression) |
 | `fonts/` | Local font files (Orbitron, Rajdhani) for offline use |
-| `GAME_MECHANICS.md` | Detailed documentation of gameplay systems and mechanics |
+| `GAME_MECHANICS.md` | Detailed documentation of gameplay systems, core mechanics, and the tutorial system |
 
 ## Key CSS Architecture Notes
 
