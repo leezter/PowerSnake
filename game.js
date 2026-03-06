@@ -7132,6 +7132,26 @@ function respawnPlayer() {
     const name = (player && player.name) || 'Player';
     player = new Snake(name, playerStyle, true);
 
+    if (tutorialActive) {
+        // Reset player to center and fixed direction in tutorial to ensure controlled environment
+        player.x = ARENA_SIZE / 2;
+        player.y = ARENA_SIZE / 2;
+        player.dir = 0;
+        player.nextDir = 0;
+        player.segments = [];
+        const dv = DIR_VECTORS[2]; // behind = left
+        for (let i = 0; i < 15; i++) {
+            player.segments.push({
+                x: player.x + dv.x * i * SEGMENT_SPACING,
+                y: player.y + dv.y * i * SEGMENT_SPACING,
+            });
+        }
+        // Also reset movement flag if we were on step 1 (Basic Movement)
+        if (Math.floor(tutorialStep) === 1) {
+            tutorialPlayerMoved = false;
+        }
+    }
+
     snakes.push(player);
 
     // Reset Camera Immediately (including smooth target buffer + direction)
@@ -7465,11 +7485,11 @@ function updateTutorial(dt) {
             break;
 
         case 1: // Move — wait for any direction change
-            if (!tutorialStepAdvancePending && player && (player.dir !== 0 || player.nextDir !== player.dir)) {
+            if (!tutorialStepAdvancePending && player && player.alive && (player.dir !== 0 || player.nextDir !== player.dir)) {
                 tutorialPlayerMoved = true;
             }
             // Also detect if the player has moved at all (joystick input changes dir)
-            if (!tutorialStepAdvancePending && player && player.dir !== 0) tutorialPlayerMoved = true;
+            if (!tutorialStepAdvancePending && player && player.alive && player.dir !== 0) tutorialPlayerMoved = true;
             if (tutorialPlayerMoved && !tutorialStepAdvancePending) {
                 tutorialStepAdvancePending = true;
                 setTimeout(() => advanceTutorialStep(), 800);
