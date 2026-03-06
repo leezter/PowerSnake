@@ -7375,6 +7375,9 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
             snakes.unshift(player);
         }
 
+        // Force a single render frame to reveal the new setup behind the transition overlay
+        render();
+
         // --- NEW: Transition Ready State ---
         // Hide loading bar and show "Tap to continue" prompt
         if (transitionBarContainer) transitionBarContainer.classList.add('hidden');
@@ -7398,7 +7401,7 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
                 requestAnimationFrame(gameLoop);
             }
         };
-    }, 1500);
+    }, 2000);
 }
 
 function performStepAdvance() {
@@ -7884,14 +7887,37 @@ function performResetTutorialKillScenario() {
 function setupTutorialSurvivalStep() {
     if (!player) return;
 
-    // Reset player score and length for the final challenge
+    // Reset player for the final challenge
     player.score = 0;
     player.foodEaten = 0;
+    player.boosting = false;
+    player.boostIntensity = 0;
+    player.x = ARENA_SIZE / 2;
+    player.y = ARENA_SIZE / 2;
+    player.lastX = player.x;
+    player.lastY = player.y;
+    player.segments = [];
+    const pDv = DIR_VECTORS[(player.dir + 2) % 4];
+    for (let i = 0; i < 15; i++) {
+        player.segments.push({
+            x: player.x + pDv.x * i * SEGMENT_SPACING,
+            y: player.y + pDv.y * i * SEGMENT_SPACING,
+        });
+    }
 
-    // Clear arena for a fresh start, but keep player
+    // Clear arena for a fresh start, but keep player (now reset)
     snakes = [player];
     foods = [];
     particles = [];
+    floatingTexts = [];
+
+    // Re-center camera immediately
+    const lookAhead = 80 + BASE_SPEED * 25;
+    const camDir = DIR_VECTORS[player.dir];
+    camera.x = player.x + camDir.x * lookAhead;
+    camera.y = player.y + camDir.y * lookAhead;
+    camera.stX = camera.x;
+    camera.stY = camera.y;
 
     // Spawn plenty of food
     spawnFood(120);
@@ -7909,24 +7935,30 @@ function setupTutorialSurvivalStep() {
         const style = SNAKE_STYLES[availableIndices[i % availableIndices.length]];
         const bot = new Snake(style.name, style, false);
 
-        // Give bots some size
-        bot.score = randInt(25, 120);
-        // Add segments
-        const extra = Math.floor(bot.score / 5);
-        const dv = DIR_VECTORS[(bot.dir + 2) % 4];
-        for (let j = 0; j < extra; j++) {
-            const lastSeg = bot.segments[bot.segments.length - 1];
-            bot.segments.push({
-                x: lastSeg.x + dv.x * SEGMENT_SPACING,
-                y: lastSeg.y + dv.y * SEGMENT_SPACING,
-            });
-        }
-
-        // Ensure they aren't spawning right on top of player
+        // Ensure they aren't spawning right on top of player — reposition EARLY
         if (dist(bot, player) < 1000) {
             const angle = Math.random() * Math.PI * 2;
             bot.x = player.x + Math.cos(angle) * 1200;
             bot.y = player.y + Math.sin(angle) * 1200;
+        }
+        bot.lastX = bot.x;
+        bot.lastY = bot.y;
+
+        // Clear existing segments (from constructor) and rebuild based on chosen position
+        bot.segments = [];
+        bot.score = randInt(25, 120);
+
+        // Build the full length (base 15 + extra based on score) behind the head
+        const baseLength = 15;
+        const extra = Math.floor(bot.score / 5);
+        const totalSegments = baseLength + extra;
+        const dv = DIR_VECTORS[(bot.dir + 2) % 4];
+
+        for (let j = 0; j < totalSegments; j++) {
+            bot.segments.push({
+                x: bot.x + dv.x * j * SEGMENT_SPACING,
+                y: bot.y + dv.y * j * SEGMENT_SPACING,
+            });
         }
 
         snakes.push(bot);
