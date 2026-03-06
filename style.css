@@ -141,6 +141,12 @@ body::before {
     display: none;
 }
 
+/* Helper for tutorial completion forcing a solid black background instead of translucent */
+.overlay.tutorial-black-bg {
+    background: #000000 !important;
+    backdrop-filter: none !important;
+}
+
 .overlay-content {
     position: relative;
     text-align: center;
@@ -1232,6 +1238,11 @@ body::before {
 
 #tutorialOverlay.hidden {
     display: none;
+}
+
+#tutorialOverlay.tutorial-black-bg {
+    background: #000000;
+    pointer-events: auto;
 }
 
 /* Tutorial message box */

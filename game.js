@@ -5547,9 +5547,13 @@ function onPlayerDeath() {
     }, 1200);
 }
 
-function showUnlockCelebration(unlockedIndices) {
+function showUnlockCelebration(unlockedIndices, onDismissCallback = null) {
     if (!unlockCelebration) {
-        deathScreen.classList.remove('hidden');
+        if (onDismissCallback) {
+            onDismissCallback();
+        } else {
+            deathScreen.classList.remove('hidden');
+        }
         return;
     }
 
@@ -5599,7 +5603,11 @@ function showUnlockCelebration(unlockedIndices) {
 
     const dismissCelebration = () => {
         unlockCelebration.classList.add('hidden');
-        deathScreen.classList.remove('hidden');
+        if (onDismissCallback) {
+            onDismissCallback();
+        } else {
+            deathScreen.classList.remove('hidden');
+        }
         unlockCelebration.removeEventListener('click', dismissCelebration);
     };
     unlockCelebration.addEventListener('click', dismissCelebration);
@@ -7178,6 +7186,7 @@ window.addEventListener('popstate', (event) => {
 function startTutorial(isReplay) {
     tutorialIsReplay = isReplay;
     tutorialActive = true;
+    if (tutorialOverlay) tutorialOverlay.classList.remove('tutorial-black-bg');
     tutorialStep = -1;
     tutorialStepTimer = 0;
     tutorialFoodEatenCount = 0;
@@ -7378,6 +7387,10 @@ function performStepAdvance() {
     }
     if (tutorialStep === 5) {
         setupTutorialSurvivalStep();
+    }
+    if (tutorialStep === 6) {
+        // Obscure the live arena entirely during the final message
+        tutorialOverlay.classList.add('tutorial-black-bg');
     }
 }
 
@@ -7850,41 +7863,32 @@ function completeTutorial() {
     // Add completion animation
     tutorialMessageBox.classList.add('completed');
 
-    // Only unlock on first completion (not replay)
-    const alreadyDone = localStorage.getItem('ps_tutorial_completed') === 'true';
-    if (!alreadyDone && !tutorialIsReplay) {
-        // Mark as completed
-        localStorage.setItem('ps_tutorial_completed', 'true');
-        tutorialCompleted = true;
+    // Mark as completed
+    localStorage.setItem('ps_tutorial_completed', 'true');
+    tutorialCompleted = true;
 
-        // Find the next locked Common snake to unlock
-        let tutorialUnlockIdx = -1;
-        for (let pos = 0; pos < UNLOCK_ORDER.length; pos++) {
-            const idx = UNLOCK_ORDER[pos];
-            if (!unlockedSnakes.has(idx)) {
-                const tierIdx = SNAKE_TIER_MAP[idx];
-                if (tierIdx === 1) { // 1 = Common tier
-                    tutorialUnlockIdx = idx;
-                    break;
-                }
-                // Stop searching if we've passed Common tier
-                if (tierIdx > 1) break;
-            }
-        }
+    // The snake that gets unlocked for completing the tutorial is 'Glitch'
+    let glitchIdx = SNAKE_STYLES.findIndex(s => s.id === 'glitch');
+    if (glitchIdx === -1) glitchIdx = 10; // Fallback
 
-        if (tutorialUnlockIdx !== -1) {
-            unlockedSnakes.add(tutorialUnlockIdx);
-            saveUnlockData();
+    const hasGlitch = unlockedSnakes.has(glitchIdx);
 
-            // Show celebration after a short delay
-            setTimeout(() => {
-                showUnlockCelebration([tutorialUnlockIdx]);
-            }, 500);
-        }
+    const onComplete = () => {
+        if (unlockCelebration) unlockCelebration.classList.remove('tutorial-black-bg');
+        goToHomeScreen();
+    };
+
+    if (!hasGlitch) {
+        unlockedSnakes.add(glitchIdx);
+        if (typeof saveUnlockData === 'function') saveUnlockData();
+
+        // Show celebration immediately with a solid black background
+        // tutorialTransitionOverlay will fade out to reveal this smoothly
+        if (unlockCelebration) unlockCelebration.classList.add('tutorial-black-bg');
+        showUnlockCelebration([glitchIdx], onComplete);
     } else {
-        // Mark as completed even on replay (for the flag)
-        localStorage.setItem('ps_tutorial_completed', 'true');
-        tutorialCompleted = true;
+        // Just go to home screen immediately
+        goToHomeScreen();
     }
 
     // Play completion fanfare
@@ -7895,8 +7899,6 @@ function completeTutorial() {
         setTimeout(() => soundManager.playTone({ freq: 784, type: 'triangle', duration: 0.2, vol: 0.3, slide: 100, pan: 0.3 }), 200);
         setTimeout(() => soundManager.playTone({ freq: 1047, type: 'sine', duration: 0.4, vol: 0.2, slide: 50, pan: 0 }), 350);
     }
-
-    // Game continues running — player stays in arena
 }
 
 function skipTutorial() {
@@ -7931,7 +7933,10 @@ function goToHomeScreen() {
     // Hide all in-game layers
     if (hud) hud.classList.add('hidden');
     if (deathScreen) deathScreen.classList.add('hidden');
-    if (tutorialOverlay) tutorialOverlay.classList.add('hidden');
+    if (tutorialOverlay) {
+        tutorialOverlay.classList.remove('tutorial-black-bg');
+        tutorialOverlay.classList.add('hidden');
+    }
     tutorialActive = false;
     if (typeof snakeSelectionScreen !== 'undefined') {
         snakeSelectionScreen.classList.add('hidden');
