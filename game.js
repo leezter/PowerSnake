@@ -3586,7 +3586,7 @@ const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
     { message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 3.5, type: 'auto', transitionDesc: 'Welcome to the neon arena! Get ready to learn the ropes.' },
     { message: 'BASIC MOVEMENT', subtext: 'Use the arrow keys, WASD, or the virtual joystick to steer.', duration: 0, type: 'action', transitionDesc: 'Learn how to steer your powerline and avoid crashing into the walls.' },
-    { message: 'GATHERING ENERGY', subtext: 'Consume 5 energy pellets to grow larger and increase your base speed.', duration: 0, type: 'action', transitionDesc: 'Collect 5 energy pellets to power up and boost your speed.' },
+    { message: 'GATHERING ENERGY', subtext: 'Consume 5 energy pellets to grow larger and increase your base speed.', duration: 0, type: 'action', transitionDesc: 'Collect 5 energy pellets to grow larger and boost your speed.' },
     { message: '\u26A1 PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionDesc: 'Ride close to rival snakes to charge your incredible speed boost.' },
     { message: 'COMBAT TACTICS', subtext: 'Cut off opponents to force them to crash into your body, turning them into food!', duration: 0, type: 'action', transitionDesc: 'Cut off enemies and force them to crash into you to steal their energy.' },
     { message: '\u26A0\uFE0F KING OF THE ARENA', subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!', duration: 0, type: 'action', transitionDesc: 'Put it all together! Reach 100 points to conquer the arena.' },
