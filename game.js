@@ -3574,13 +3574,16 @@ let tutorialBotKilled = false;
 let tutorialBoostTriggered = false;
 let tutorialDummyBot = null;
 let tutorialStepAdvancePending = false; // prevents re-triggering during delayed advance
+let tutorialBoostCount = 0; // tracks completed boosts in step 3
+let tutorialBoostBot = null; // reference to the boost demo bot
+let tutorialWasBoosting = false; // tracks if player was boosting last frame (for edge detection)
 
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
     { message: 'WELCOME TO POWERSNAKE!', subtext: 'Let\'s learn the basics...', duration: 3.0, type: 'auto' },
     { message: 'MOVE YOUR SNAKE', subtext: '', duration: 0, type: 'action' },
     { message: 'EAT FOOD TO GROW!', subtext: 'Collect 5 food pellets', duration: 0, type: 'action' },
-    { message: '\u26A1 SPEED BOOST', subtext: 'Get close to another snake for a boost!', duration: 0, type: 'action' },
+    { message: '\u26A1 SPEED BOOST', subtext: 'Run alongside another snake to boost! (0/3)', duration: 0, type: 'action' },
     { message: 'ELIMINATE RIVALS!', subtext: 'Cut off the enemy snake to destroy it!', duration: 0, type: 'action' },
     { message: '\u26A0\uFE0F STAY ALIVE!', subtext: 'Avoid walls and other snakes \u2014 death resets everything!', duration: 4.0, type: 'auto' },
     { message: '\u{1F3C6} YOU\'RE READY!', subtext: 'Go dominate the neon arena!', duration: 3.5, type: 'auto' }
@@ -3744,7 +3747,8 @@ class Snake {
         // Head scale decay
         this.headScale = lerp(this.headScale, 1.0, 0.15);
 
-        // Move
+        // Move (frozen tutorial bots don't move)
+        if (this.tutorialFrozen) return;
         const dv = DIR_VECTORS[this.dir];
         const moveAmount = this.speed * dt * 60;
 
@@ -3779,8 +3783,8 @@ class Snake {
             this.boosting = false;
         }
 
-        // AI
-        if (!this.isPlayer) {
+        // AI (skip for tutorial-frozen bots)
+        if (!this.isPlayer && !this.tutorialFrozen) {
             this.updateAI(dt);
         }
 
@@ -5446,16 +5450,27 @@ function onPlayerDeath() {
                 tutorialMessageEl.textContent = 'OOPS! TRY AGAIN!';
                 tutorialSubtextEl.textContent = "Don't worry, you respawned!";
             }
-            // Restore the previous step message after 2 seconds
-            setTimeout(() => {
-                if (tutorialActive && tutorialStep >= 0 && tutorialStep < TUTORIAL_TOTAL_STEPS) {
-                    const step = TUTORIAL_STEPS[Math.floor(tutorialStep)];
-                    if (step) {
-                        tutorialMessageEl.textContent = step.message;
-                        tutorialSubtextEl.textContent = step.subtext;
+            // If on boost step, re-setup the boost scenario (preserving count)
+            if (Math.floor(tutorialStep) === 3) {
+                setTimeout(() => {
+                    if (tutorialActive && Math.floor(tutorialStep) === 3) {
+                        spawnTutorialBoostBot();
+                        tutorialMessageEl.textContent = TUTORIAL_STEPS[3].message;
+                        tutorialSubtextEl.textContent = `Run alongside another snake to boost! (${tutorialBoostCount}/3)`;
                     }
-                }
-            }, 2000);
+                }, 1500);
+            } else {
+                // Restore the previous step message after 2 seconds
+                setTimeout(() => {
+                    if (tutorialActive && tutorialStep >= 0 && tutorialStep < TUTORIAL_TOTAL_STEPS) {
+                        const step = TUTORIAL_STEPS[Math.floor(tutorialStep)];
+                        if (step) {
+                            tutorialMessageEl.textContent = step.message;
+                            tutorialSubtextEl.textContent = step.subtext;
+                        }
+                    }
+                }, 2000);
+            }
         }, 800);
         return; // Skip normal death flow
     }
@@ -7157,6 +7172,9 @@ function startTutorial(isReplay) {
     tutorialBoostTriggered = false;
     tutorialDummyBot = null;
     tutorialStepAdvancePending = false;
+    tutorialBoostCount = 0;
+    tutorialBoostBot = null;
+    tutorialWasBoosting = false;
 
     // Push history state
     history.pushState({ page: 'game' }, 'In Game', '#game');
@@ -7318,16 +7336,34 @@ function updateTutorial(dt) {
             }
             break;
 
-        case 3: // Boost — wait for boost to trigger
-            if (!tutorialStepAdvancePending && player && player.boostIntensity > 0.1) {
-                tutorialSubtextEl.textContent = '\u26A1 BOOSTING! Feel the speed!';
-                if (tutorialStepTimer > 2.0) {
-                    tutorialStepAdvancePending = true;
-                    setTimeout(() => advanceTutorialStep(), 1500);
+        case 3: // Boost — require 3 separate boosts
+            if (!tutorialStepAdvancePending && player) {
+                // If the boost bot died, respawn both player and bot to initial positions
+                if (tutorialBoostBot && !tutorialBoostBot.alive) {
+                    resetTutorialBoostScenario();
+                    break;
                 }
+                const isBoosting = player.boostIntensity > 0.1;
+                // Detect rising edge: was NOT boosting, now IS boosting
+                if (isBoosting && !tutorialWasBoosting) {
+                    tutorialBoostCount++;
+                    if (tutorialBoostCount >= 3) {
+                        tutorialSubtextEl.textContent = '\u26A1 BOOST MASTERED!';
+                        tutorialStepAdvancePending = true;
+                        setTimeout(() => advanceTutorialStep(), 1500);
+                    } else {
+                        tutorialSubtextEl.textContent = `\u26A1 BOOSTING! (${tutorialBoostCount}/3)`;
+                    }
+                } else if (isBoosting) {
+                    // Still boosting, update display
+                    tutorialSubtextEl.textContent = `\u26A1 BOOSTING! (${tutorialBoostCount}/3)`;
+                } else if (!isBoosting && tutorialBoostCount > 0 && tutorialBoostCount < 3) {
+                    tutorialSubtextEl.textContent = `Run alongside another snake to boost! (${tutorialBoostCount}/3)`;
+                }
+                tutorialWasBoosting = isBoosting;
             }
-            // Auto-advance after 20s if boost hasn't triggered (fallback)
-            if (!tutorialStepAdvancePending && tutorialStepTimer > 20) {
+            // Auto-advance after 45s if boosts haven't completed (fallback)
+            if (!tutorialStepAdvancePending && tutorialStepTimer > 45) {
                 advanceTutorialStep();
             }
             break;
@@ -7389,9 +7425,56 @@ function spawnTutorialFood() {
     }
 }
 
+function resetTutorialBoostScenario() {
+    // Reset player position to center, rebuild segments, then re-spawn the boost bot
+    if (!player || !player.alive) return;
+
+    // Reset player to center facing right
+    player.x = ARENA_SIZE / 2;
+    player.y = ARENA_SIZE / 2;
+    player.dir = 0;
+    player.nextDir = 0;
+    player.boostIntensity = 0;
+    player.boosting = false;
+    player.boostTimer = 0;
+    tutorialWasBoosting = false;
+    player.segments = [];
+    const dv = DIR_VECTORS[2]; // behind = left
+    for (let i = 0; i < 15; i++) {
+        player.segments.push({
+            x: player.x + dv.x * i * SEGMENT_SPACING,
+            y: player.y + dv.y * i * SEGMENT_SPACING,
+        });
+    }
+
+    // Re-spawn the boost bot
+    spawnTutorialBoostBot();
+
+    tutorialSubtextEl.textContent = `Run alongside another snake to boost! (${tutorialBoostCount}/3)`;
+}
+
 function spawnTutorialBoostBot() {
-    // Spawn a bot that will pass near the player for boost opportunity
+    // L-shaped bot geometry (player faces RIGHT as example):
+    //
+    //                          perp section (toward player's Y, visible)
+    //                          |
+    //                          |
+    // Player --->..............corner===============================> Bot Head
+    //             384px         \--- parallel section (boost zone) --->
+    //            (2 seconds)    offset 40px to the side of player path
+    //
+    // Math:
+    //   BASE_SPEED=3.2, moveAmount = speed * dt * 60 = 192 px/s
+    //   2 seconds = 384 px
+    //   SEGMENT_SPACING = 6, BOOST_PROXIMITY = 60
     if (!player) return;
+
+    // Remove any previous boost bot
+    if (tutorialBoostBot) {
+        snakes = snakes.filter(s => s !== tutorialBoostBot);
+        tutorialBoostBot = null;
+    }
+
     const availableIndices = [];
     for (let i = 0; i < SNAKE_STYLES.length; i++) {
         if (i !== playerSnakeStyleIndex) availableIndices.push(i);
@@ -7400,22 +7483,53 @@ function spawnTutorialBoostBot() {
     const style = SNAKE_STYLES[idx];
     const bot = new Snake(style.name, style, false);
 
-    // Place the bot parallel to the player, close enough for boost
-    const playerDir = DIR_VECTORS[player.dir];
-    const perpDir = { x: -playerDir.y, y: playerDir.x };
-    bot.x = player.x + perpDir.x * 45 + playerDir.x * 150;
-    bot.y = player.y + perpDir.y * 45 + playerDir.y * 150;
-    bot.dir = player.dir; // Same direction as player
+    bot.dir = player.dir;
     bot.nextDir = player.dir;
+
+    const playerDir = DIR_VECTORS[player.dir]; // e.g. {1,0} for RIGHT
+    const perpDir = { x: -playerDir.y, y: playerDir.x }; // e.g. {0,1} for DOWN
+
+    const boostDistance = 384; // 384px = 2 seconds at base speed
+    const sideOffset = 40; // px offset to the side (within BOOST_PROXIMITY=60)
+    const parallelSegments = 200; // segments for the long parallel section
+    const perpSegments = 30; // segments for the perpendicular visible section
+
+    // Corner position: 384px ahead of player, offset to the side
+    const cornerX = player.x + playerDir.x * boostDistance + perpDir.x * sideOffset;
+    const cornerY = player.y + playerDir.y * boostDistance + perpDir.y * sideOffset;
+
+    // Bot head is at the FAR END of the parallel section (ahead of corner)
+    bot.x = cornerX + playerDir.x * parallelSegments * SEGMENT_SPACING;
+    bot.y = cornerY + playerDir.y * parallelSegments * SEGMENT_SPACING;
+
+    bot.score = 300;
+    bot.tutorialFrozen = true; // disable AI so the bot stays in place
+
+    // Build segments from head to tail:
+    // 1. Parallel section: from head backward to corner (along player direction)
+    // 2. Perpendicular section: from corner toward player's path (visible ahead)
     bot.segments = [];
-    const bdv = DIR_VECTORS[(bot.dir + 2) % 4];
-    for (let j = 0; j < 20; j++) {
+    const behindDir = DIR_VECTORS[(bot.dir + 2) % 4]; // opposite of movement
+
+    // Parallel section — the boost zone alongside player's path
+    for (let j = 0; j < parallelSegments; j++) {
         bot.segments.push({
-            x: bot.x + bdv.x * j * SEGMENT_SPACING,
-            y: bot.y + bdv.y * j * SEGMENT_SPACING,
+            x: bot.x + behindDir.x * j * SEGMENT_SPACING,
+            y: bot.y + behindDir.y * j * SEGMENT_SPACING,
         });
     }
-    bot.score = 50;
+
+    // Perpendicular section — extends from corner TOWARD player's path
+    // (opposite of perpDir = toward player)
+    const towardPlayer = { x: -perpDir.x, y: -perpDir.y };
+    for (let j = 1; j <= perpSegments; j++) {
+        bot.segments.push({
+            x: cornerX + towardPlayer.x * j * SEGMENT_SPACING,
+            y: cornerY + towardPlayer.y * j * SEGMENT_SPACING,
+        });
+    }
+
+    tutorialBoostBot = bot;
     snakes.push(bot);
 }
 
