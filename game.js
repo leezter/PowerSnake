@@ -7282,6 +7282,8 @@ function advanceTutorialStep() {
     }
     if (tutorialStep === 3) {
         // Spawn a bot close to the player for boost demo
+        // Player stays at current position — bot parallel section is offset 40px to the side
+        // which is within BOOST_PROXIMITY (60px), so the player boosts automatically
         spawnTutorialBoostBot();
     }
     if (tutorialStep === 4) {
@@ -7429,7 +7431,8 @@ function resetTutorialBoostScenario() {
     // Reset player position to center, rebuild segments, then re-spawn the boost bot
     if (!player || !player.alive) return;
 
-    // Reset player to center facing right
+    // Reset player to center facing right (no offset — player is naturally
+    // 40px from bot's parallel section, within BOOST_PROXIMITY)
     player.x = ARENA_SIZE / 2;
     player.y = ARENA_SIZE / 2;
     player.dir = 0;
@@ -7519,13 +7522,12 @@ function spawnTutorialBoostBot() {
         });
     }
 
-    // Perpendicular section — extends from corner TOWARD player's path
-    // (opposite of perpDir = toward player)
-    const towardPlayer = { x: -perpDir.x, y: -perpDir.y };
+    // Perpendicular section — extends from corner AWAY from the player's path
+    // so it doesn't block the player's approach
     for (let j = 1; j <= perpSegments; j++) {
         bot.segments.push({
-            x: cornerX + towardPlayer.x * j * SEGMENT_SPACING,
-            y: cornerY + towardPlayer.y * j * SEGMENT_SPACING,
+            x: cornerX + perpDir.x * j * SEGMENT_SPACING,
+            y: cornerY + perpDir.y * j * SEGMENT_SPACING,
         });
     }
 
