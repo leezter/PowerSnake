@@ -7307,6 +7307,9 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
 
     tutorialTransitionOverlay.classList.remove('hidden');
 
+    // Stop game loop while transition is on screen to prevent 'problematic' background behavior
+    gameRunning = false;
+
     // Pause a moment, then perform the setup and eventually hide the overlay
     setTimeout(() => {
         // Reset advancement flag to prevent double-triggers
@@ -7347,6 +7350,13 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
         setTimeout(() => {
             tutorialInTransition = false;
             tutorialTransitionOverlay.classList.add('hidden');
+
+            // Resume game if still in tutorial and NOT in the final message step (which should stay frozen)
+            if (tutorialActive && tutorialStep < TUTORIAL_TOTAL_STEPS - 1) {
+                gameRunning = true;
+                lastTime = performance.now();
+                requestAnimationFrame(gameLoop);
+            }
         }, 1000);
     }, 1500);
 }
@@ -7359,6 +7369,19 @@ function performStepAdvance() {
     if (tutorialStep >= TUTORIAL_TOTAL_STEPS) {
         completeTutorial();
         return;
+    }
+
+    // Stop game loop specifically for the final completion message step to prevent background issues
+    if (tutorialStep === TUTORIAL_TOTAL_STEPS - 1) {
+        gameRunning = false;
+        // Since the game loop is stopped, updateTutorial won't advance this step automatically.
+        // We must set a manual timeout to complete the tutorial.
+        const stepDisplayDuration = (TUTORIAL_STEPS[tutorialStep].duration || 3.5) * 1000;
+        setTimeout(() => {
+            if (tutorialActive && tutorialStep === TUTORIAL_TOTAL_STEPS - 1) {
+                completeTutorial();
+            }
+        }, stepDisplayDuration);
     }
 
     const step = TUTORIAL_STEPS[tutorialStep];
@@ -7871,6 +7894,7 @@ function setupTutorialSurvivalStep() {
 }
 
 function completeTutorial() {
+    gameRunning = false; // Stop the arena immediately and keep it stopped
     tutorialActive = false;
     tutorialOverlay.classList.add('hidden');
 
