@@ -3562,12 +3562,15 @@ const tutorialSubtextEl = document.getElementById('tutorialSubtext');
 const tutorialStepIndicator = document.getElementById('tutorialStepIndicator');
 const skipTutorialButton = document.getElementById('skipTutorialButton');
 const tutorialButton = document.getElementById('tutorialButton');
+const tutorialTransitionOverlay = document.getElementById('tutorialTransitionOverlay');
+const transitionTextEl = document.getElementById('transitionText');
 
 let tutorialActive = false;
 let tutorialStep = -1;
 let tutorialStepTimer = 0;
 let tutorialCompleted = false; // loaded from localStorage
 let tutorialIsReplay = false; // true when replaying from menu button
+let tutorialInTransition = false;
 let tutorialFoodEatenCount = 0;
 let tutorialPlayerMoved = false;
 let tutorialBotKilled = false;
@@ -5442,6 +5445,8 @@ function startGame(nickname) {
 function onPlayerDeath() {
     // During tutorial, respawn the player instead of showing death screen
     if (tutorialActive) {
+        if (tutorialInTransition) return;
+
         // Brief delay then respawn
         setTimeout(() => {
             if (!gameRunning) return;
@@ -5621,6 +5626,14 @@ function updateNextUnlockTeaser() {
 
 function gameLoop(timestamp) {
     if (!gameRunning) return;
+
+    // Pause game logic during tutorial transitions to ensure setup is stable
+    if (tutorialActive && tutorialInTransition) {
+        lastTime = timestamp || performance.now(); // Keep lastTime current
+        render();
+        animationId = requestAnimationFrame(gameLoop);
+        return;
+    }
 
     // Tutorial step machine
     if (tutorialActive) updateTutorial((timestamp - lastTime) / 1000);
@@ -7240,6 +7253,82 @@ function startTutorial(isReplay) {
 
 function advanceTutorialStep() {
     if (!tutorialActive) return;
+
+    // If it's the very first step (-1 to 0), just advance.
+    // Otherwise, show the transition screen.
+    if (tutorialStep === -1) {
+        performStepAdvance();
+    } else {
+        showTutorialTransition(() => {
+            performStepAdvance();
+        }, false);
+    }
+}
+
+function showTutorialTransition(callback, isReset = false) {
+    if (tutorialInTransition) return;
+    tutorialInTransition = true;
+
+    if (isReset) {
+        transitionTextEl.textContent = "RETRYING STEP...";
+    } else {
+        // Update transition screen text based on the upcoming step
+        const nextStepIdx = Math.floor(tutorialStep) + 1;
+        if (nextStepIdx < TUTORIAL_TOTAL_STEPS) {
+            const nextStep = TUTORIAL_STEPS[nextStepIdx];
+            transitionTextEl.textContent = `NEXT: ${nextStep.message}`;
+        } else {
+            transitionTextEl.textContent = "FINISHING TUTORIAL...";
+        }
+    }
+
+    tutorialTransitionOverlay.classList.remove('hidden');
+
+    // Pause a moment, then perform the setup and eventually hide the overlay
+    setTimeout(() => {
+        // Reset advancement flag to prevent double-triggers
+        tutorialStepAdvancePending = false;
+
+        // Guarantee player is alive and state is clean BEFORE we setup the step
+        if (player) {
+            player.alive = true;
+            player.boosting = false;
+            player.boostIntensity = 0;
+            player.boostTimer = 0;
+            player.foodEaten = 0; // Reset speed boost from food
+            player.segments = player.segments.slice(0, 15); // Reset length to base
+            deathScreen.classList.add('hidden');
+            hud.classList.remove('hidden');
+            deathTime = 0;
+        }
+
+        // Clean slate for the arena to prevent step leakage
+        foods = [];
+        particles = [];
+        floatingTexts = [];
+        // Clear all snakes except player
+        if (player) {
+            snakes = [player];
+        } else {
+            snakes = [];
+        }
+
+        callback(); // Call performStepAdvance or performReset... which does the specific setup
+
+        // Final safety check: ensure player is in snakes array
+        if (player && !snakes.includes(player)) {
+            snakes.unshift(player);
+        }
+
+        // Short delay so they see the result of the setup through the blur/overlay before it fades
+        setTimeout(() => {
+            tutorialInTransition = false;
+            tutorialTransitionOverlay.classList.add('hidden');
+        }, 1000);
+    }, 1500);
+}
+
+function performStepAdvance() {
     tutorialStep = Math.floor(tutorialStep) + 1;
     tutorialStepTimer = 0;
     tutorialStepAdvancePending = false;
@@ -7278,21 +7367,16 @@ function advanceTutorialStep() {
 
     // Step-specific setups — progressively populate the arena
     if (tutorialStep === 2) {
-        // Spawn a food cluster near the player for the food-eating step
         spawnTutorialFood();
     }
     if (tutorialStep === 3) {
-        // Spawn a bot close to the player for boost demo
-        // Player stays at current position — bot parallel section is offset 40px to the side
-        // which is within BOOST_PROXIMITY (60px), so the player boosts automatically
-        spawnTutorialBoostBot();
+        tutorialBoostCount = 0;
+        performResetTutorialBoostScenario();
     }
     if (tutorialStep === 4) {
-        // Prepare scenario for kill demo
-        resetTutorialKillScenario();
+        performResetTutorialKillScenario();
     }
     if (tutorialStep === 5) {
-        // Final survival challenge
         setupTutorialSurvivalStep();
     }
 }
@@ -7309,7 +7393,7 @@ function updateTutorialDots() {
 }
 
 function updateTutorial(dt) {
-    if (!tutorialActive || tutorialStep < 0) return;
+    if (!tutorialActive || tutorialStep < 0 || tutorialInTransition) return;
     tutorialStepTimer += Math.min(dt, 0.05);
 
     const step = TUTORIAL_STEPS[tutorialStep];
@@ -7468,6 +7552,12 @@ function spawnTutorialFood() {
 }
 
 function resetTutorialBoostScenario() {
+    showTutorialTransition(() => {
+        performResetTutorialBoostScenario();
+    }, true);
+}
+
+function performResetTutorialBoostScenario() {
     // Reset player position to center, rebuild segments, then re-spawn the boost bot
     if (!player) return;
 
@@ -7646,6 +7736,12 @@ function spawnTutorialKillBot() {
 }
 
 function resetTutorialKillScenario() {
+    showTutorialTransition(() => {
+        performResetTutorialKillScenario();
+    }, true);
+}
+
+function performResetTutorialKillScenario() {
     if (!player) return;
 
     if (!player.alive) {
