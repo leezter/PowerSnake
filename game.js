@@ -3589,13 +3589,13 @@ let tutorialWasBoosting = false; // tracks if player was boosting last frame (fo
 
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
-    { icon: '✦', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 3.5, type: 'auto', transitionDesc: 'Welcome to the neon arena! Get ready to learn the ropes.' },
-    { icon: '🕹️', message: 'BASIC MOVEMENT', subtext: 'Use WASD or Arrow Keys', duration: 0, type: 'action', transitionDesc: 'Learn how to steer your power snake and avoid crashing into the walls.' },
-    { icon: '🟢', message: 'GATHERING ENERGY', subtext: 'Energy Pellets: 0 / 5', duration: 0, type: 'action', transitionDesc: 'Collect 5 energy pellets to grow larger and boost your speed.' },
-    { icon: '⚡', message: 'PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionDesc: 'Ride close to rival snakes to charge your speed boost.' },
-    { icon: '💀', message: 'COMBAT TACTICS', subtext: 'Cut off opponents to force them to crash into your body. You will gain points and grow larger by stealing their energy!', duration: 0, type: 'action', transitionDesc: 'Force enemies to crash into your body to gain points and grow larger by stealing their energy.' },
-    { icon: '👑', message: 'KING OF THE ARENA', subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!', duration: 0, type: 'action', transitionDesc: 'Put it all together! Reach 100 points to conquer the arena.' },
-    { icon: '🏆', message: 'TUTORIAL COMPLETE!', subtext: 'Now go dominate the arena, King!', duration: 3.5, type: 'auto', transitionDesc: 'You are ready for the real thing. Dominate the arena!' }
+    { icon: '✦', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 3.5, type: 'auto', transitionText: 'WELCOME TO THE NEON ARENA!' },
+    { icon: '🕹️', message: 'BASIC MOVEMENT', subtext: 'Use WASD or Arrow Keys', duration: 0, type: 'action', transitionText: 'SWIPE OR DRAG TO STEER' },
+    { icon: '🟢', message: 'GATHERING ENERGY', subtext: 'Energy Pellets: 0 / 5', duration: 0, type: 'action', transitionText: 'COLLECT ENERGY PELLETS TO GROW!' },
+    { icon: '⚡', message: 'PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionText: 'SLITHER NEAR RIVALS TO CHARGE BOOST' },
+    { icon: '💀', message: 'COMBAT TACTICS', subtext: 'Cut off opponents to force them to crash into your body. You will gain points and grow larger by stealing their energy!', duration: 0, type: 'action', transitionText: 'CUT OFF ENEMIES TO STEAL ENERGY' },
+    { icon: '👑', message: 'KING OF THE ARENA', subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!', duration: 0, type: 'action', transitionText: 'REACH 100 POINTS TO WIN' },
+    { icon: '🏆', message: 'TUTORIAL COMPLETE!', subtext: 'Now go dominate the arena, King!', duration: 3.5, type: 'auto', transitionText: 'DOMINATE THE ARENA!' }
 ];
 
 // ---- Resize ----
@@ -7330,8 +7330,8 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
         const nextStepIdx = Math.floor(tutorialStep) + 1;
         if (nextStepIdx < TUTORIAL_TOTAL_STEPS) {
             const nextStep = TUTORIAL_STEPS[nextStepIdx];
-            transitionTextEl.textContent = nextStep.message;
-            transitionDescEl.textContent = nextStep.transitionDesc || "";
+            transitionTextEl.textContent = nextStep.transitionText || nextStep.message;
+            transitionDescEl.textContent = "";
             transitionIconEl.textContent = nextStep.icon || "⚡";
         } else {
             transitionTextEl.textContent = "READY FOR BATTLE...";
