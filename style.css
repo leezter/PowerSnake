@@ -1514,7 +1514,7 @@ body::before {
 }
 
 .transition-bar-container.hidden {
-    opacity: 0;
+    display: none;
 }
 
 .transition-bar {
@@ -1551,8 +1551,7 @@ body::before {
 }
 
 .transition-continue.hidden {
-    opacity: 0;
-    pointer-events: none;
+    display: none;
 }
 
 @keyframes continuePulse {
