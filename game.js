@@ -3578,20 +3578,19 @@ let tutorialCompleted = false; // loaded from localStorage
 let tutorialIsReplay = false; // true when replaying from menu button
 let tutorialInTransition = false;
 let tutorialFoodEatenCount = 0;
-let tutorialPlayerMoved = false;
-let tutorialBotKilled = false;
-let tutorialBoostTriggered = false;
 let tutorialDummyBot = null;
 let tutorialStepAdvancePending = false; // prevents re-triggering during delayed advance
 let tutorialBoostCount = 0; // tracks completed boosts in step 3
 let tutorialBoostBot = null; // reference to the boost demo bot
 let tutorialWasBoosting = false; // tracks if player was boosting last frame (for edge detection)
+let tutorialMoveCount = 0;
+let tutorialLastDir = -1;
 
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
     { icon: '✦', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 3.5, type: 'auto', transitionText: 'WELCOME TO THE NEON ARENA!' },
-    { icon: '🕹️', message: 'BASIC MOVEMENT', subtext: 'Use WASD or Arrow Keys', duration: 0, type: 'action', transitionText: 'SWIPE OR DRAG TO STEER' },
-    { icon: '🟢', message: 'GATHERING ENERGY', subtext: 'Energy Pellets: 0 / 5', duration: 0, type: 'action', transitionText: 'COLLECT ENERGY PELLETS TO GROW!' },
+    { icon: '🕹️', message: 'BASIC MOVEMENT', subtext: 'Moves: 0 / 4', duration: 0, type: 'action', transitionText: 'SWIPE OR DRAG TO STEER' },
+    { icon: '🟢', message: 'GATHERING ENERGY', subtext: 'Energy Pellets: 0 / 10', duration: 0, type: 'action', transitionText: 'COLLECT ENERGY PELLETS TO GROW!' },
     { icon: '⚡', message: 'PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionText: 'SLITHER NEAR RIVALS TO CHARGE BOOST' },
     { icon: '💀', message: 'COMBAT TACTICS', subtext: 'Cut off opponents to force them to crash into your body. You will gain points and grow larger by stealing their energy!', duration: 0, type: 'action', transitionText: 'CUT OFF ENEMIES TO STEAL ENERGY' },
     { icon: '👑', message: 'KING OF THE ARENA', subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!', duration: 0, type: 'action', transitionText: 'REACH 100 POINTS TO WIN' },
@@ -4376,6 +4375,10 @@ function checkCollisions() {
                 if (snake.isPlayer) {
                     screenShake = 5 + f.value; // Crunchier
                     soundManager.playCollect();
+
+                    if (tutorialActive && Math.floor(tutorialStep) === 2) {
+                        tutorialFoodEatenCount++;
+                    }
                 }
 
                 // Floating Text
@@ -7222,11 +7225,9 @@ function startTutorial(isReplay) {
     tutorialStep = -1;
     tutorialStepTimer = 0;
     tutorialFoodEatenCount = 0;
-    tutorialPlayerMoved = false;
-    tutorialBotKilled = false;
-    tutorialBoostTriggered = false;
-    tutorialDummyBot = null;
     tutorialStepAdvancePending = false;
+    tutorialMoveCount = 0;
+    tutorialLastDir = -1;
     tutorialBoostCount = 0;
     tutorialBoostBot = null;
     tutorialWasBoosting = false;
@@ -7448,10 +7449,10 @@ function performStepAdvance() {
 
     const step = TUTORIAL_STEPS[tutorialStep];
 
-    // Detect mobile for step 1 subtext
     if (tutorialStep === 1) {
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        step.subtext = isMobile ? 'Swipe or drag to steer' : 'Use WASD or Arrow Keys';
+        const prefix = isMobile ? 'Swipe to steer' : 'Use Keys to move';
+        step.subtext = `${prefix}: ${tutorialMoveCount} / 4`;
     }
 
     // Update message
@@ -7511,24 +7512,35 @@ function updateTutorial(dt) {
             if (tutorialStepTimer >= step.duration) advanceTutorialStep();
             break;
 
-        case 1: // Move — wait for any direction change
-            if (!tutorialStepAdvancePending && player && player.alive && (player.dir !== 0 || player.nextDir !== player.dir)) {
-                tutorialPlayerMoved = true;
-            }
-            // Also detect if the player has moved at all (joystick input changes dir)
-            if (!tutorialStepAdvancePending && player && player.alive && player.dir !== 0) tutorialPlayerMoved = true;
-            if (tutorialPlayerMoved && !tutorialStepAdvancePending) {
-                tutorialStepAdvancePending = true;
-                setTimeout(() => advanceTutorialStep(), 800);
+        case 1: // Move — wait for 4 direction changes
+            if (!tutorialStepAdvancePending && player && player.alive) {
+                if (tutorialLastDir === -1) {
+                    tutorialLastDir = player.dir;
+                }
+
+                if (player.dir !== tutorialLastDir) {
+                    tutorialMoveCount++;
+                    tutorialLastDir = player.dir;
+
+                    const needed = 4;
+                    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                    const prefix = isMobile ? 'Swipe to steer' : 'Use Keys to move';
+                    tutorialSubtextEl.textContent = `${prefix}: ${Math.min(tutorialMoveCount, needed)} / ${needed}`;
+
+                    if (tutorialMoveCount >= needed) {
+                        tutorialStepAdvancePending = true;
+                        setTimeout(() => advanceTutorialStep(), 800);
+                    }
+                }
             }
             break;
 
         case 2: // Eat food — count food eaten
             if (player && !tutorialStepAdvancePending) {
-                // Track food by monitoring player score changes
-                const needed = 5;
-                tutorialSubtextEl.textContent = `ENERGY COLLECTED: ${Math.min(player.score, needed)} / ${needed}`;
-                if (player.score >= needed) {
+                // Track pellets by using the dedicated tutorialFoodEatenCount
+                const needed = 10;
+                tutorialSubtextEl.textContent = `ENERGY COLLECTED: ${Math.min(tutorialFoodEatenCount, needed)} / ${needed}`;
+                if (tutorialFoodEatenCount >= needed) {
                     tutorialStepAdvancePending = true;
                     setTimeout(() => advanceTutorialStep(), 600);
                 }
@@ -7656,7 +7668,7 @@ function updateTutorial(dt) {
 function spawnTutorialFood() {
     // Spawn a few food pellets scattered around the player so they must navigate to them
     if (!player) return;
-    const count = 7;
+    const count = 15;
     for (let i = 0; i < count; i++) {
         const angle = (Math.PI * 2 / count) * i + rand(-0.3, 0.3); // evenly spread with jitter
         const distance = rand(200, 500); // far enough that they won't auto-collect
