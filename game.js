@@ -5835,6 +5835,22 @@ class SoundManager {
         }
     }
 
+    fadeSFX(duration = 0.5) {
+        if (!this.ctx || !this.masterGain) return;
+        const now = this.ctx.currentTime;
+        this.masterGain.gain.cancelScheduledValues(now);
+        this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+        this.masterGain.gain.linearRampToValueAtTime(0, now + duration);
+    }
+
+    restoreSFX(duration = 0.1) {
+        if (!this.ctx || !this.masterGain) return;
+        const now = this.ctx.currentTime;
+        this.masterGain.gain.cancelScheduledValues(now);
+        this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+        this.masterGain.gain.linearRampToValueAtTime(0.6, now + duration); // 0.6 is base master gain
+    }
+
     // Helper: Random number generator
     rnd(min, max) {
         return Math.random() * (max - min) + min;
@@ -7343,6 +7359,11 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
 
     tutorialTransitionOverlay.classList.remove('hidden');
 
+    // Fade out audio gracefully
+    if (typeof soundManager !== 'undefined' && soundManager) {
+        soundManager.fadeSFX(0.5);
+    }
+
     // Stop game loop while transition is on screen to prevent 'problematic' background behavior
     gameRunning = false;
 
@@ -7357,6 +7378,9 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
             player.boosting = false;
             player.boostIntensity = 0;
             player.boostTimer = 0;
+            if (typeof soundManager !== 'undefined' && soundManager) {
+                soundManager.updateBoostHum(0); // explicitly cancel active boost noise
+            }
             player.foodEaten = 0; // Reset speed boost from food
             player.segments = player.segments.slice(0, 15); // Reset length to base
             deathScreen.classList.add('hidden');
@@ -7398,6 +7422,7 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
 
             // Play a small click/confirm sound
             if (soundManager && soundManager.ctx) {
+                soundManager.restoreSFX(0.01);
                 soundManager.playTone({ freq: 600, type: 'triangle', duration: 0.1, vol: 0.2, slide: 100 });
             }
 
@@ -7434,6 +7459,11 @@ function performStepAdvance() {
         // Fade out arena
         if (canvas) canvas.classList.add('arena-fade-out');
         if (hud) hud.classList.add('arena-fade-out');
+
+        // Ensure leftover engine sounds from the final step are stopped
+        if (typeof soundManager !== 'undefined' && soundManager) {
+            soundManager.updateBoostHum(0);
+        }
 
         // Play fanfare immediately when the screen pops up
         if (soundManager && soundManager.ctx) {
@@ -8100,6 +8130,11 @@ if (tutorialButton) {
 function goToHomeScreen() {
     gameRunning = false;
     soundManager.resume(); // Ensure context is active
+
+    // Ensure continuous SFX are killed
+    if (typeof soundManager !== 'undefined' && soundManager) {
+        soundManager.updateBoostHum(0);
+    }
 
     // Hide all in-game layers
     if (hud) hud.classList.add('hidden');
