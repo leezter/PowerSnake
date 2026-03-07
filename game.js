@@ -4270,7 +4270,7 @@ function updateMagnetism(dt) {
 // ---- Collision Detection ----
 function checkCollisions() {
     for (const snake of snakes) {
-        if (!snake.alive) continue;
+        if (!snake.alive || snake.tutorialFrozen) continue;
 
         const hx = snake.x;
         const hy = snake.y;
