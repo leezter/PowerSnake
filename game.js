@@ -7709,7 +7709,8 @@ function performResetTutorialBoostScenario() {
     }
 
     player.x = ARENA_SIZE / 2;
-    player.y = ARENA_SIZE / 2;
+    // For Goal 3 (facing UP), move the starting point back 200px to give more reaction time
+    player.y = (tutorialBoostCount === 2) ? (ARENA_SIZE / 2) + 200 : (ARENA_SIZE / 2);
     player.dir = dir;
     player.nextDir = dir;
     player.boostIntensity = 0;
@@ -7784,7 +7785,7 @@ function spawnTutorialBoostBot() {
     } else if (tutorialBoostCount === 2) {
         // Scenario 3: Bot is much closer, on the right side, but significantly further out
         // Player has to react and veer right to hug the bot
-        boostDistance = 250;
+        boostDistance = 500; // Increased from 250 to give more time as requested
         sideOffset = 95;
         perpSegments = 50;
     }
