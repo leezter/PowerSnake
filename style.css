@@ -675,6 +675,15 @@ body::before {
         width: 95%;
         padding: 20px;
     }
+
+    .tutorial-btn-container {
+        margin-top: 25px;
+    }
+
+    .tutorial-menu-btn {
+        font-size: 0.75rem;
+        padding: 10px 20px;
+    }
 }
 
 @media (max-width: 430px) {
@@ -704,6 +713,15 @@ body::before {
 
     .stat-value {
         font-size: 1.6rem;
+    }
+
+    .tutorial-btn-container {
+        margin-top: 20px;
+    }
+
+    .tutorial-menu-btn {
+        font-size: 0.7rem;
+        padding: 8px 16px;
     }
 }
 
@@ -1194,23 +1212,29 @@ body::before {
    ============================================ */
 
 /* Tutorial button on main menu (top-right corner) */
+.tutorial-btn-container {
+    margin-top: 35px;
+    display: flex;
+    justify-content: center;
+}
+
 .tutorial-menu-btn {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: rgba(0, 240, 255, 0.08);
-    border: 1px solid rgba(0, 240, 255, 0.3);
-    color: rgba(0, 240, 255, 0.8);
+    position: relative;
+    background: rgba(0, 240, 255, 0.05);
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    color: rgba(0, 240, 255, 0.7);
     font-family: var(--font-display);
-    font-size: 0.6rem;
+    font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 2px;
-    padding: 6px 12px;
-    border-radius: 6px;
+    padding: 12px 24px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
     z-index: 10;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
 }
+
 
 .tutorial-menu-btn:hover {
     background: rgba(0, 240, 255, 0.15);
