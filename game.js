@@ -3590,9 +3590,9 @@ let tutorialWasBoosting = false; // tracks if player was boosting last frame (fo
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
     { icon: '✦', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 3.5, type: 'auto', transitionDesc: 'Welcome to the neon arena! Get ready to learn the ropes.' },
-    { icon: '🕹️', message: 'BASIC MOVEMENT', subtext: 'Use WASD or Arrow Keys', duration: 0, type: 'action', transitionDesc: 'Learn how to steer your powerline and avoid crashing into the walls.' },
+    { icon: '🕹️', message: 'BASIC MOVEMENT', subtext: 'Use WASD or Arrow Keys', duration: 0, type: 'action', transitionDesc: 'Learn how to steer your power snake and avoid crashing into the walls.' },
     { icon: '🟢', message: 'GATHERING ENERGY', subtext: 'Energy Pellets: 0 / 5', duration: 0, type: 'action', transitionDesc: 'Collect 5 energy pellets to grow larger and boost your speed.' },
-    { icon: '⚡', message: 'PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionDesc: 'Ride close to rival snakes to charge your incredible speed boost.' },
+    { icon: '⚡', message: 'PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionDesc: 'Ride close to rival snakes to charge your speed boost.' },
     { icon: '💀', message: 'COMBAT TACTICS', subtext: 'Cut off opponents to force them to crash into your body. You will gain points and grow larger by stealing their energy!', duration: 0, type: 'action', transitionDesc: 'Force enemies to crash into your body to gain points and grow larger by stealing their energy.' },
     { icon: '👑', message: 'KING OF THE ARENA', subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!', duration: 0, type: 'action', transitionDesc: 'Put it all together! Reach 100 points to conquer the arena.' },
     { icon: '🏆', message: 'TUTORIAL COMPLETE!', subtext: 'Now go dominate the arena, King!', duration: 3.5, type: 'auto', transitionDesc: 'You are ready for the real thing. Dominate the arena!' }
@@ -5468,7 +5468,13 @@ function onPlayerDeath() {
                     if (tutorialActive && Math.floor(tutorialStep) === 3) {
                         spawnTutorialBoostBot();
                         tutorialMessageEl.textContent = TUTORIAL_STEPS[3].message;
-                        tutorialSubtextEl.textContent = `Slither close and parallel to another snake to build up a speed boost! (${tutorialBoostCount}/3)`;
+                        if (tutorialBoostCount === 2) {
+                            tutorialSubtextEl.textContent = `Eat the line of pellets while boosting for a SUPER BOOST! (2/3)`;
+                        } else if (tutorialBoostCount === 1) {
+                            tutorialSubtextEl.textContent = `Steer closer to the rival snake to gain a boost! (1/3)`;
+                        } else {
+                            tutorialSubtextEl.textContent = `Slither close and parallel to another snake to build up a speed boost! (${tutorialBoostCount}/3)`;
+                        }
                     }
                 }, 1500);
             } else {
@@ -7565,14 +7571,26 @@ function updateTutorial(dt) {
                         tutorialStepAdvancePending = true;
                         setTimeout(() => {
                             tutorialStepAdvancePending = false;
-                            resetTutorialBoostScenario("NICE! NEXT LAP...");
+                            if (tutorialBoostCount === 2) {
+                                resetTutorialBoostScenario("SUPER BOOST: EAT PELLETS WHILE BOOSTING!");
+                            } else if (tutorialBoostCount === 1) {
+                                resetTutorialBoostScenario("STEER CLOSER TO THE RIVAL SNAKE!");
+                            } else {
+                                resetTutorialBoostScenario("NICE! NEXT LAP...");
+                            }
                         }, 3000);
                     }
                 } else if (isBoosting) {
                     // Still boosting, update display
                     tutorialSubtextEl.textContent = `\u26A1 BOOSTING! (${tutorialBoostCount}/3)`;
                 } else if (!isBoosting && tutorialBoostCount > 0 && tutorialBoostCount < 3) {
-                    tutorialSubtextEl.textContent = `Slither close and parallel to another snake to charge your boost! (${tutorialBoostCount}/3)`;
+                    if (tutorialBoostCount === 2) {
+                        tutorialSubtextEl.textContent = `Eat the line of pellets while boosting for a SUPER BOOST! (2/3)`;
+                    } else if (tutorialBoostCount === 1) {
+                        tutorialSubtextEl.textContent = `Steer closer to the rival snake to gain a boost! (1/3)`;
+                    } else {
+                        tutorialSubtextEl.textContent = `Slither close and parallel to another snake to charge your boost! (${tutorialBoostCount}/3)`;
+                    }
                 }
                 tutorialWasBoosting = isBoosting;
             }
@@ -7708,7 +7726,13 @@ function performResetTutorialBoostScenario() {
     camera.stX = camera.x;
     camera.stY = camera.y;
 
-    tutorialSubtextEl.textContent = `Slither close and parallel to another snake to charge your boost! (${tutorialBoostCount}/3)`;
+    if (tutorialBoostCount === 2) {
+        tutorialSubtextEl.textContent = `Eat the line of pellets while boosting for a SUPER BOOST! (2/3)`;
+    } else if (tutorialBoostCount === 1) {
+        tutorialSubtextEl.textContent = `Steer closer to the rival snake to gain a boost! (1/3)`;
+    } else {
+        tutorialSubtextEl.textContent = `Slither close and parallel to another snake to charge your boost! (${tutorialBoostCount}/3)`;
+    }
 }
 
 function spawnTutorialBoostBot() {
@@ -7788,6 +7812,27 @@ function spawnTutorialBoostBot() {
 
     tutorialBoostBot = bot;
     snakes.push(bot);
+
+    // Spawn a line of pellets for the final super boost scenario
+    if (tutorialBoostCount === 2) {
+        foods = []; // Clear existing foods to keep things focused
+        const numFoods = 24;
+        const foodSpacing = 50;
+        const foodSideOffset = -35; // Place food on the inside of the bot snake (accessible by player)
+        for (let i = 0; i < numFoods; i++) {
+            const alongPath = 100 + i * foodSpacing;
+            if (alongPath > parallelSegments * SEGMENT_SPACING) break;
+
+            foods.push({
+                x: cornerX + playerDir.x * alongPath + perpDir.x * foodSideOffset,
+                y: cornerY + playerDir.y * alongPath + perpDir.y * foodSideOffset,
+                value: 5,
+                color: '#ffff00',
+                pulse: rand(0, Math.PI * 2),
+                size: 5
+            });
+        }
+    }
 }
 
 function spawnTutorialKillBot() {
