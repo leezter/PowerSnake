@@ -8264,28 +8264,30 @@ function spawnTutorialKillBot() {
     const style = SNAKE_STYLES[idx];
     const bot = new Snake(style.name, style, false);
 
-    // Bot moves parallel, slightly slower
+    // Bot moves parallel
     bot.dir = player.dir;
     bot.nextDir = player.dir;
 
-    // Position bot ahead and to the side
+    // Position bot ahead and slightly to the side to provide a proximity boost for the player
     const pDir = DIR_VECTORS[player.dir];
     const pPerp = { x: -pDir.y, y: pDir.x };
 
-    bot.x = player.x + pDir.x * 200 + pPerp.x * 120;
-    bot.y = player.y + pDir.y * 200 + pPerp.y * 120;
+    // Bot is ahead (pDir * 315) so the tail (315 - 40*6 = 75) is just in front of player
+    bot.x = player.x + pDir.x * 315 + pPerp.x * 45;
+    bot.y = player.y + pDir.y * 315 + pPerp.y * 45;
 
     bot.segments = [];
     const bdv = DIR_VECTORS[(bot.dir + 2) % 4];
-    for (let j = 0; j < 15; j++) {
+    // Make the bot long (40 segments) to provide a substantial boost runway
+    for (let j = 0; j < 40; j++) {
         bot.segments.push({
             x: bot.x + bdv.x * j * SEGMENT_SPACING,
             y: bot.y + bdv.y * j * SEGMENT_SPACING,
         });
     }
 
-    bot.score = 50;
-    bot.speed = BASE_SPEED * 0.7; // Slower so player can overtake
+    bot.score = 100;
+    bot.speed = BASE_SPEED * 0.9; // Slightly slower so player naturally catches up and holds the boost
     bot.tutorialFrozen = false;
     bot.aiAggression = 0;
     bot.updateAI = function () { }; // Override AI to just go straight
@@ -8311,13 +8313,13 @@ function performResetTutorialKillScenario() {
     }
 
     const dir = 0; // RIGHT
-    player.x = ARENA_SIZE / 2;
+    player.x = ARENA_SIZE * 0.4; // Positioned to allow the bot to chase from behind
     player.y = ARENA_SIZE / 2;
     player.dir = dir;
     player.nextDir = dir;
     player.score = 0;
-    player.foodEaten = 10; // Give a slight speed advantage for target practice
-    player.speed = BASE_SPEED * 1.2;
+    player.foodEaten = 0; // Start at base speed to maximize the impact of the boost
+    player.speed = BASE_SPEED;
     player.boostIntensity = 0;
     player.boosting = false;
     player.boostTimer = 0;
