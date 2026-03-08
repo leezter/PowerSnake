@@ -3568,6 +3568,7 @@ const tutorialTransitionOverlay = document.getElementById('tutorialTransitionOve
 const transitionTextEl = document.getElementById('transitionText');
 const transitionDescEl = document.getElementById('transitionDesc');
 const transitionIconEl = document.getElementById('transitionIcon');
+const transitionImageEl = document.getElementById('transitionImage');
 const transitionBarContainer = document.getElementById('transitionBarContainer');
 const transitionContinue = document.getElementById('transitionContinue');
 
@@ -3588,13 +3589,13 @@ let tutorialLastDir = -1;
 
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
-    { icon: '✦', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 3.5, type: 'auto', transitionText: 'WELCOME TO THE NEON ARENA!' },
-    { icon: '🕹️', message: 'BASIC MOVEMENT', subtext: 'Moves: 0 / 4', duration: 0, type: 'action', transitionText: 'SWIPE OR DRAG TO STEER' },
-    { icon: '🟢', message: 'GATHERING ENERGY', subtext: 'Energy Pellets: 0 / 10', duration: 0, type: 'action', transitionText: 'COLLECT ENERGY PELLETS TO GROW!' },
-    { icon: '⚡', message: 'PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionText: 'SLITHER NEAR RIVALS TO CHARGE BOOST' },
-    { icon: '💀', message: 'COMBAT TACTICS', subtext: 'Cut off opponents to force them to crash into your body. You will gain points and grow larger by stealing their energy!', duration: 0, type: 'action', transitionText: 'CUT OFF ENEMIES TO STEAL ENERGY' },
-    { icon: '👑', message: 'KING OF THE ARENA', subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!', duration: 0, type: 'action', transitionText: 'REACH 100 POINTS TO WIN' },
-    { icon: '🏆', message: 'TUTORIAL COMPLETE!', subtext: 'Now go dominate the arena, King!', duration: 3.5, type: 'auto', transitionText: 'DOMINATE THE ARENA!' }
+    { icon: '✦', image: 'tutorial_welcome.png', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 3.5, type: 'auto', transitionText: 'WELCOME TO THE NEON ARENA!' },
+    { icon: '🕹️', image: 'tutorial_joystick.png', message: 'BASIC MOVEMENT', subtext: 'Moves: 0 / 4', duration: 0, type: 'action', transitionText: 'SWIPE OR DRAG TO STEER' },
+    { icon: '🟢', image: 'tutorial_pellets.png', message: 'GATHERING ENERGY', subtext: 'Energy Pellets: 0 / 10', duration: 0, type: 'action', transitionText: 'COLLECT ENERGY PELLETS TO GROW!' },
+    { icon: '⚡', image: 'tutorial_boost.png', message: 'PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionText: 'SLITHER NEAR RIVALS TO CHARGE BOOST' },
+    { icon: '💀', image: 'tutorial_combat.png', message: 'COMBAT TACTICS', subtext: 'Cut off opponents to force them to crash into your body. You will gain points and grow larger by stealing their energy!', duration: 0, type: 'action', transitionText: 'CUT OFF ENEMIES TO STEAL ENERGY' },
+    { icon: '👑', image: 'tutorial_king.png', message: 'KING OF THE ARENA', subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!', duration: 0, type: 'action', transitionText: 'REACH 100 POINTS TO WIN' },
+    { icon: '🏆', image: 'tutorial_complete.png', message: 'TUTORIAL COMPLETE!', subtext: 'Now go dominate the arena, King!', duration: 3.5, type: 'auto', transitionText: 'DOMINATE THE ARENA!' }
 ];
 
 // ---- Resize ----
@@ -7669,7 +7670,7 @@ function advanceTutorialStep() {
     }
 }
 
-function showTutorialTransition(callback, transitionText = null, transitionDesc = null) {
+function showTutorialTransition(callback, transitionText = null, transitionDesc = null, customImage = null) {
     if (tutorialInTransition) return;
     tutorialInTransition = true;
 
@@ -7687,6 +7688,17 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
         } else {
             transitionIconEl.textContent = "⚡";
         }
+
+        if (customImage) {
+            if (transitionImageEl) {
+                transitionImageEl.src = customImage;
+                transitionImageEl.classList.remove('hidden');
+            }
+            if (transitionIconEl) transitionIconEl.classList.add('hidden');
+        } else {
+            if (transitionImageEl) transitionImageEl.classList.add('hidden');
+            if (transitionIconEl) transitionIconEl.classList.remove('hidden');
+        }
     } else {
         // Update transition screen text based on the upcoming step
         const nextStepIdx = Math.floor(tutorialStep) + 1;
@@ -7694,11 +7706,28 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
             const nextStep = TUTORIAL_STEPS[nextStepIdx];
             transitionTextEl.textContent = nextStep.transitionText || nextStep.message;
             transitionDescEl.textContent = "";
-            transitionIconEl.textContent = nextStep.icon || "⚡";
+
+            if (nextStep.image) {
+                if (transitionImageEl) {
+                    transitionImageEl.src = nextStep.image;
+                    transitionImageEl.classList.remove('hidden');
+                }
+                if (transitionIconEl) transitionIconEl.classList.add('hidden');
+            } else {
+                if (transitionImageEl) transitionImageEl.classList.add('hidden');
+                if (transitionIconEl) {
+                    transitionIconEl.classList.remove('hidden');
+                    transitionIconEl.textContent = nextStep.icon || "⚡";
+                }
+            }
         } else {
             transitionTextEl.textContent = "READY FOR BATTLE...";
             transitionDescEl.textContent = "";
-            transitionIconEl.textContent = "⚔️";
+            if (transitionIconEl) {
+                transitionIconEl.classList.remove('hidden');
+                transitionIconEl.textContent = "⚔️";
+            }
+            if (transitionImageEl) transitionImageEl.classList.add('hidden');
         }
     }
 
@@ -7962,11 +7991,11 @@ function updateTutorial(dt) {
                         setTimeout(() => {
                             tutorialStepAdvancePending = false;
                             if (tutorialBoostCount === 2) {
-                                resetTutorialBoostScenario("SUPER BOOST: EAT PELLETS WHILE BOOSTING!");
+                                resetTutorialBoostScenario("SUPER BOOST: EAT PELLETS WHILE BOOSTING!", "tutorial_super_boost.png");
                             } else if (tutorialBoostCount === 1) {
-                                resetTutorialBoostScenario("STEER CLOSER TO THE RIVAL SNAKE!");
+                                resetTutorialBoostScenario("STEER CLOSER TO THE RIVAL SNAKE!", "tutorial_steer_closer.png");
                             } else {
-                                resetTutorialBoostScenario("NICE! NEXT LAP...");
+                                resetTutorialBoostScenario("NICE! NEXT LAP...", "tutorial_boost.png");
                             }
                         }, 3000);
                     }
@@ -7994,14 +8023,14 @@ function updateTutorial(dt) {
             {
                 if (!tutorialStepAdvancePending) {
                     if (!player.alive) {
-                        resetTutorialKillScenario("YOU DIED! RETRYING...");
+                        resetTutorialKillScenario("YOU DIED! RETRYING...", "tutorial_combat.png");
                         break;
                     }
                     if (tutorialDummyBot && tutorialDummyBot.alive) {
                         const dx = player.x - tutorialDummyBot.x;
                         const dy = player.y - tutorialDummyBot.y;
                         if (dx * dx + dy * dy > 1500 * 1500) {
-                            resetTutorialKillScenario("RIVAL ESCAPED! RETRYING...");
+                            resetTutorialKillScenario("RIVAL ESCAPED! RETRYING...", "tutorial_combat.png");
                             break;
                         }
                     }
@@ -8013,7 +8042,7 @@ function updateTutorial(dt) {
                             setTimeout(() => advanceTutorialStep(), 1200);
                         } else {
                             // If the bot died by crashing into a wall, restart
-                            resetTutorialKillScenario("RIVAL CRASHED! RETRYING...");
+                            resetTutorialKillScenario("RIVAL CRASHED! RETRYING...", "tutorial_combat.png");
                             break;
                         }
                     }
@@ -8061,10 +8090,10 @@ function spawnTutorialFood() {
     }
 }
 
-function resetTutorialBoostScenario(customText) {
+function resetTutorialBoostScenario(customText, customImage = null) {
     showTutorialTransition(() => {
         performResetTutorialBoostScenario();
-    }, customText || "RETRYING CHALLENGE...");
+    }, customText || "RETRYING CHALLENGE...", null, customImage);
 }
 
 function performResetTutorialBoostScenario() {
@@ -8265,10 +8294,10 @@ function spawnTutorialKillBot() {
     snakes.push(bot);
 }
 
-function resetTutorialKillScenario(customText) {
+function resetTutorialKillScenario(customText, customImage = null) {
     showTutorialTransition(() => {
         performResetTutorialKillScenario();
-    }, customText || "RETRYING CHALLENGE...");
+    }, customText || "RETRYING CHALLENGE...", null, customImage);
 }
 
 function performResetTutorialKillScenario() {
