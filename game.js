@@ -5851,6 +5851,307 @@ class SoundManager {
         this.masterGain.gain.linearRampToValueAtTime(0.6, now + duration); // 0.6 is base master gain
     }
 
+    startBGM() {
+        if (!this.ctx) return;
+        if (this.bgmNodes && this.bgmNodes.length > 0) return;
+
+        this.bgmNodes = [];
+        this.bgmIntervals = []; // Track random event loops for cleanup
+        this.bgmGain = this.ctx.createGain();
+        this.bgmGain.gain.value = 0.0;
+        this.bgmGain.connect(this.limiter);
+
+        const now = this.ctx.currentTime;
+        this.bgmGain.gain.linearRampToValueAtTime(0.5, now + 1.0);
+
+        const bgmMainAmp = this.ctx.createGain();
+        bgmMainAmp.gain.value = 0.6;
+        bgmMainAmp.connect(this.bgmGain);
+
+        // Helper to schedule random events
+        const scheduleRandom = (fn, minWait, maxWait) => {
+            const loop = () => {
+                if (!this.bgmGain) return; // Cleaned up
+                fn();
+                const next = minWait + Math.random() * (maxWait - minWait);
+                this.bgmIntervals.push(setTimeout(loop, next));
+            };
+            this.bgmIntervals.push(setTimeout(loop, minWait + Math.random() * (maxWait - minWait)));
+        };
+
+        // -------------------------------------------------------------
+        // MASTERPIECE AMBIENCE: "NEON WONDER"
+        // -------------------------------------------------------------
+
+        // 1. The Power Heartbeat (Deep, Grounding, Slow Pulse)
+        // Gives the player a rhythmic feeling of large-scale safe power
+        const beatOsc = this.ctx.createOscillator();
+        beatOsc.type = 'sine';
+        beatOsc.frequency.value = 45; // Deep sub C
+        const beatGain = this.ctx.createGain();
+        beatGain.gain.value = 0;
+
+        // Use an LFO to pulse the heartbeat smoothly
+        const beatLfo = this.ctx.createOscillator();
+        beatLfo.type = 'sine';
+        beatLfo.frequency.value = 0.3; // Very slow, calming pulse (approx 72 BPM resting heart rate halftimed)
+        const beatLfoGain = this.ctx.createGain();
+        beatLfoGain.gain.value = 0.35;
+
+        beatLfo.connect(beatLfoGain);
+        beatLfoGain.connect(beatGain.gain);
+
+        beatOsc.connect(beatGain);
+        beatGain.connect(bgmMainAmp);
+        beatOsc.start(now);
+        beatLfo.start(now);
+        this.bgmNodes.push(beatOsc, beatLfo, beatLfoGain, beatGain);
+
+        // 2. The "Wonder" Pad (Lush C Major 9 + Lydian color)
+        // Beautiful, shimmering, totally not creepy
+        const rootC = 130.81; // C3
+        // C, G, B, D, F# (Lydian flavor)
+        const padFreqs = [rootC, rootC * 1.5, rootC * 1.887, rootC * 2.25, rootC * 2.834];
+
+        padFreqs.forEach((f, i) => {
+            const osc = this.ctx.createOscillator();
+            osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+            osc.frequency.value = f;
+
+            const lfo = this.ctx.createOscillator();
+            lfo.type = 'sine';
+            lfo.frequency.value = 0.05 + (Math.random() * 0.05); // Very slow drift
+
+            const lfoGain = this.ctx.createGain();
+            lfoGain.gain.value = 0.12;
+
+            const baseGain = this.ctx.createGain();
+            baseGain.gain.value = 0.12;
+
+            lfo.connect(lfoGain);
+            lfoGain.connect(baseGain.gain);
+
+            const panner = this.ctx.createStereoPanner();
+            panner.pan.value = (Math.random() - 0.5) * 1.5;
+
+            // Soft glow filter
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 1200 + (Math.random() * 400);
+
+            osc.connect(baseGain);
+            baseGain.connect(filter);
+            filter.connect(panner);
+            panner.connect(bgmMainAmp);
+
+            osc.start(now);
+            lfo.start(now);
+            this.bgmNodes.push(osc, lfo, lfoGain, baseGain, filter, panner);
+        });
+
+        // 3. Dopamine Data Cascades (Universally Pleasing Windchime/Arp)
+        // Uses C Major Pentatonic extended across 3 octaves
+        const pentatonicC = [
+            261.63, 293.66, 329.63, 392.00, 440.00, // C4, D4, E4, G4, A4
+            523.25, 587.33, 659.25, 783.99, 880.00, // C5...
+            1046.50, 1174.66, 1318.51               // C6...
+        ];
+
+        // A simple "delay" effect line to make the chimes sound like they are echoing in a large glowing arena
+        const delayNet = this.ctx.createDelay(2.0);
+        delayNet.delayTime.value = 0.35 + (Math.random() * 0.1);
+        const fbGain = this.ctx.createGain();
+        fbGain.gain.value = 0.45; // 45% feedback
+        const delayFilter = this.ctx.createBiquadFilter();
+        delayFilter.type = 'highpass';
+        delayFilter.frequency.value = 800; // Keep echoes light and airy
+
+        delayNet.connect(fbGain);
+        fbGain.connect(delayFilter);
+        delayFilter.connect(delayNet);
+        delayNet.connect(bgmMainAmp);
+        this.bgmNodes.push(delayNet, fbGain, delayFilter);
+
+        scheduleRandom(() => {
+            const t = this.ctx.currentTime;
+
+            // Generate a rapid cascade of 3-7 very short bells
+            const numNotes = 3 + Math.floor(Math.random() * 5);
+            let timeOffset = 0;
+
+            // Randomly choose an arp direction: up, down, or flat
+            const dir = Math.random();
+            const startIdx = Math.floor(Math.random() * (pentatonicC.length - numNotes));
+
+            for (let i = 0; i < numNotes; i++) {
+                let noteIdx = Math.floor(Math.random() * pentatonicC.length); // random scramble
+                if (dir > 0.6) noteIdx = startIdx + i; // ascend
+                else if (dir > 0.3) noteIdx = startIdx + numNotes - i; // descend
+
+                const f = pentatonicC[Math.max(0, Math.min(pentatonicC.length - 1, noteIdx))];
+
+                const cOsc = this.ctx.createOscillator();
+                cOsc.type = 'sine'; // Pure, beautiful glass bell
+                cOsc.frequency.setValueAtTime(f, t + timeOffset);
+
+                const cGain = this.ctx.createGain();
+                cGain.gain.setValueAtTime(0, t + timeOffset);
+                cGain.gain.linearRampToValueAtTime(0.06, t + timeOffset + 0.02);
+                cGain.gain.exponentialRampToValueAtTime(0.001, t + timeOffset + 1.2);
+
+                const cPan = this.ctx.createStereoPanner();
+                cPan.pan.value = (Math.random() - 0.5) * 1.5;
+
+                cOsc.connect(cGain);
+                cGain.connect(cPan);
+
+                // Mix to both dry and delay
+                cPan.connect(bgmMainAmp);
+                cPan.connect(delayNet);
+
+                cOsc.start(t + timeOffset);
+                cOsc.stop(t + timeOffset + 1.5);
+
+                timeOffset += 0.1 + (Math.random() * 0.05); // Fast, pleasing ripples
+            }
+        }, 1500, 4500); // Trigger a cascade frequently
+
+        // 4. Subtle Electricity Crackles (Static) - Smoothed and very gentle
+        scheduleRandom(() => {
+            const t = this.ctx.currentTime;
+            const duration = 0.05 + Math.random() * 0.1;
+
+            const bufferSize = this.ctx.sampleRate * duration;
+            const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.2; // very soft noise
+            }
+
+            const noiseSrc = this.ctx.createBufferSource();
+            noiseSrc.buffer = buffer;
+
+            const noiseFilter = this.ctx.createBiquadFilter();
+            noiseFilter.type = 'bandpass';
+            noiseFilter.frequency.value = 6000 + Math.random() * 2000;
+            noiseFilter.Q.value = 1;
+
+            const noiseGain = this.ctx.createGain();
+            noiseGain.gain.setValueAtTime(0, t);
+            noiseGain.gain.linearRampToValueAtTime(0.02, t + 0.01); // ultra subtle
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+            const nPan = this.ctx.createStereoPanner();
+            nPan.pan.value = (Math.random() - 0.5) * 1.8;
+
+            noiseSrc.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(nPan);
+            nPan.connect(bgmMainAmp);
+
+            noiseSrc.start(t);
+        }, 2000, 5000);
+
+        // 5. Digital Energy Bubbles (Fast processing/calculation)
+        // Gives that cute techy "calculating data" vibe
+        scheduleRandom(() => {
+            const t = this.ctx.currentTime;
+            const dOsc = this.ctx.createOscillator();
+            dOsc.type = 'square';
+
+            // Randomly pick a pentatonic base
+            const baseFreq = pentatonicC[Math.floor(Math.random() * 6)];
+            dOsc.frequency.setValueAtTime(baseFreq, t);
+
+            // Fast LFO modulating the filter for a "bubbling" sound
+            const dFilter = this.ctx.createBiquadFilter();
+            dFilter.type = 'lowpass';
+            dFilter.frequency.setValueAtTime(300, t);
+            dFilter.Q.value = 5;
+
+            const filterMod = this.ctx.createOscillator();
+            filterMod.type = 'sawtooth';
+            filterMod.frequency.value = 12 + Math.random() * 8; // Fast bubble
+
+            const filterGain = this.ctx.createGain();
+            filterGain.gain.value = 600; // Modulate cuttoff
+
+            filterMod.connect(filterGain);
+            filterGain.connect(dFilter.frequency);
+
+            const dGain = this.ctx.createGain();
+            dGain.gain.setValueAtTime(0, t);
+            dGain.gain.linearRampToValueAtTime(0.012, t + 0.1); // Extremely subtle
+            dGain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+
+            const dPan = this.ctx.createStereoPanner();
+            dPan.pan.value = (Math.random() - 0.5);
+
+            dOsc.connect(dFilter);
+            dFilter.connect(dGain);
+            dGain.connect(dPan);
+            dPan.connect(bgmMainAmp);
+
+            dOsc.start(t);
+            filterMod.start(t);
+            dOsc.stop(t + 0.8);
+            filterMod.stop(t + 0.8);
+        }, 4000, 9000);
+
+        this.bgmNodes.push(bgmMainAmp);
+
+        // Adjusted per user request: consistent volume everywhere
+        this.bgmActiveVolume = 0.25;  // Used during transition screens
+        this.bgmDimVolume = 0.25;     // Used during gameplay tutorial steps
+    }
+
+    dimBGM() {
+        if (!this.ctx || !this.bgmGain) return;
+        const now = this.ctx.currentTime;
+        this.bgmGain.gain.cancelScheduledValues(now);
+        this.bgmGain.gain.setValueAtTime(this.bgmGain.gain.value, now);
+        this.bgmGain.gain.linearRampToValueAtTime(this.bgmDimVolume, now + 1.0);
+    }
+
+    undimBGM() {
+        if (!this.ctx || !this.bgmGain) return;
+        const now = this.ctx.currentTime;
+        this.bgmGain.gain.cancelScheduledValues(now);
+        this.bgmGain.gain.setValueAtTime(this.bgmGain.gain.value, now);
+        this.bgmGain.gain.linearRampToValueAtTime(this.bgmActiveVolume, now + 1.0);
+    }
+
+    stopBGM() {
+        // Clear random event loops
+        if (this.bgmIntervals) {
+            this.bgmIntervals.forEach(id => clearTimeout(id));
+            this.bgmIntervals = [];
+        }
+
+        if (!this.ctx || !this.bgmGain) return;
+        const now = this.ctx.currentTime;
+        this.bgmGain.gain.cancelScheduledValues(now);
+        this.bgmGain.gain.setValueAtTime(this.bgmGain.gain.value, now);
+        this.bgmGain.gain.linearRampToValueAtTime(0.001, now + 1.0);
+
+        const nodes = this.bgmNodes;
+        this.bgmNodes = [];
+        nodes.forEach(n => {
+            if (n.stop) {
+                try { n.stop(now + 1.0); } catch (e) { }
+            }
+        });
+        setTimeout(() => {
+            nodes.forEach(n => {
+                if (n.disconnect) n.disconnect();
+            });
+            if (this.bgmGain) {
+                this.bgmGain.disconnect();
+                this.bgmGain = null;
+            }
+        }, 1100);
+    }
+
     // Helper: Random number generator
     rnd(min, max) {
         return Math.random() * (max - min) + min;
@@ -7298,6 +7599,10 @@ function startTutorial(isReplay) {
     tutorialOverlay.classList.remove('hidden');
 
     soundManager.playStart();
+    if (typeof soundManager !== 'undefined' && soundManager) {
+        soundManager.startBGM();
+        soundManager.dimBGM();
+    }
 
     gameRunning = true;
     deathTime = 0;
@@ -7362,6 +7667,7 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
     // Fade out audio gracefully
     if (typeof soundManager !== 'undefined' && soundManager) {
         soundManager.fadeSFX(0.5);
+        soundManager.undimBGM();
     }
 
     // Stop game loop while transition is on screen to prevent 'problematic' background behavior
@@ -7424,6 +7730,7 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
             if (soundManager && soundManager.ctx) {
                 soundManager.restoreSFX(0.01);
                 soundManager.playTone({ freq: 600, type: 'triangle', duration: 0.1, vol: 0.2, slide: 100 });
+                soundManager.dimBGM();
             }
 
             // Resume game if still in tutorial and NOT in the final message step (which should stay frozen)
@@ -7463,6 +7770,7 @@ function performStepAdvance() {
         // Ensure leftover engine sounds from the final step are stopped
         if (typeof soundManager !== 'undefined' && soundManager) {
             soundManager.updateBoostHum(0);
+            soundManager.undimBGM();
         }
 
         // Play fanfare immediately when the screen pops up
@@ -8134,6 +8442,7 @@ function goToHomeScreen() {
     // Ensure continuous SFX are killed
     if (typeof soundManager !== 'undefined' && soundManager) {
         soundManager.updateBoostHum(0);
+        soundManager.stopBGM();
     }
 
     // Hide all in-game layers
