@@ -5827,6 +5827,40 @@ class SoundManager {
 
         this.masterGain.connect(this.limiter);
         this.limiter.connect(this.ctx.destination);
+
+        // --- PROFESSIONAL SIDECHAIN DUCKING SETUP ---
+        // 1. Ducking Gain (Controls BGM volume based on SFX amplitude)
+        this.bgmDuckGain = this.ctx.createGain();
+        this.bgmDuckGain.gain.value = 1.0;
+        this.bgmDuckGain.connect(this.limiter);
+
+        // 2. Rectifier (Absolute Value curve generator for Envelope Follower)
+        this.rectifier = this.ctx.createWaveShaper();
+        const curveSize = 1024;
+        const curve = new Float32Array(curveSize);
+        for (let i = 0; i < curveSize; i++) {
+            const x = (i * 2) / (curveSize - 1) - 1;
+            curve[i] = Math.abs(x);
+        }
+        this.rectifier.curve = curve;
+
+        // 3. Lowpass Filter (Smoothing envelope - Acts as Attack/Release times)
+        // 8Hz creates a very fast ducking attack and a smooth 60ms release ramp
+        this.envelopeFilter = this.ctx.createBiquadFilter();
+        this.envelopeFilter.type = 'lowpass';
+        this.envelopeFilter.frequency.value = 8.0;
+        this.envelopeFilter.Q.value = 0; // Linear filter without resonance bumps
+
+        // 4. Inverter & Depth (Flips signal so louder SFX = negative gain offset on BGM)
+        this.scDepth = this.ctx.createGain();
+        // A tuning of -1.5 ensures loud SFX push the gain down nicely without heavy phase inversion clipping
+        this.scDepth.gain.value = -1.5;
+
+        // Wire up the sidechain path natively
+        this.masterGain.connect(this.rectifier); // SFX triggers the ducking analysis
+        this.rectifier.connect(this.envelopeFilter);
+        this.envelopeFilter.connect(this.scDepth);
+        this.scDepth.connect(this.bgmDuckGain.gain); // Audio-rate modulation param
     }
 
     resume() {
@@ -5859,7 +5893,13 @@ class SoundManager {
         this.bgmIntervals = []; // Track random event loops for cleanup
         this.bgmGain = this.ctx.createGain();
         this.bgmGain.gain.value = 0.0;
-        this.bgmGain.connect(this.limiter);
+
+        // Connect BGM to ducking stage
+        if (this.bgmDuckGain) {
+            this.bgmGain.connect(this.bgmDuckGain);
+        } else {
+            this.bgmGain.connect(this.limiter);
+        }
 
         const now = this.ctx.currentTime;
         this.bgmGain.gain.linearRampToValueAtTime(0.5, now + 1.0);
