@@ -1,4 +1,4 @@
-﻿/* ============================================
+/* ============================================
    PowerSnake â€” Complete Game Engine
    ============================================ */
 
@@ -3589,7 +3589,7 @@ let tutorialLastDir = -1;
 
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
-    { icon: '✦', image: 'tutorial_welcome.png', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 3.5, type: 'auto', transitionText: 'WELCOME TO THE NEON ARENA!' },
+    { icon: '✦', image: 'tutorial_welcome.png', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 4.5, type: 'auto', transitionText: 'WELCOME TO THE NEON ARENA!', transitionDesc: 'Dominate the arena, collect energy, and become the King. Unlock over 70 unique snake styles as you grow!' },
     { icon: '🕹️', image: 'tutorial_joystick.png', message: 'BASIC MOVEMENT', subtext: 'Moves: 0 / 4', duration: 0, type: 'action', transitionText: 'SWIPE OR DRAG TO STEER' },
     { icon: '🟢', image: 'tutorial_pellets.png', message: 'GATHERING ENERGY', subtext: 'Energy Pellets: 0 / 10', duration: 0, type: 'action', transitionText: 'COLLECT ENERGY PELLETS TO GROW!' },
     { icon: '⚡', image: 'tutorial_boost.png', message: 'PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionText: 'SLITHER NEAR RIVALS TO CHARGE BOOST' },
@@ -7661,7 +7661,7 @@ function advanceTutorialStep() {
     // If it's the very first step (-1 to 0) or the last step (completion), just advance.
     // Otherwise, show the transition screen.
     const nextStepIdx = Math.floor(tutorialStep) + 1;
-    if (tutorialStep === -1 || nextStepIdx >= TUTORIAL_TOTAL_STEPS - 1) {
+    if (nextStepIdx >= TUTORIAL_TOTAL_STEPS - 1) {
         performStepAdvance();
     } else {
         showTutorialTransition(() => {
@@ -7705,7 +7705,7 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
         if (nextStepIdx < TUTORIAL_TOTAL_STEPS) {
             const nextStep = TUTORIAL_STEPS[nextStepIdx];
             transitionTextEl.textContent = nextStep.transitionText || nextStep.message;
-            transitionDescEl.textContent = "";
+            transitionDescEl.textContent = nextStep.transitionDesc || "";
 
             if (nextStep.image) {
                 if (transitionImageEl) {
