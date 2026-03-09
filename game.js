@@ -3567,7 +3567,6 @@ const tcContinueButton = document.getElementById('tcContinueButton');
 const tutorialTransitionOverlay = document.getElementById('tutorialTransitionOverlay');
 const transitionTextEl = document.getElementById('transitionText');
 const transitionDescEl = document.getElementById('transitionDesc');
-const transitionIconEl = document.getElementById('transitionIcon');
 const transitionImageEl = document.getElementById('transitionImage');
 const transitionBarContainer = document.getElementById('transitionBarContainer');
 const transitionContinue = document.getElementById('transitionContinue');
@@ -7682,22 +7681,14 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
     if (transitionText) {
         transitionTextEl.textContent = transitionText;
         transitionDescEl.textContent = transitionDesc || "";
-        // If retrying, use a retry-themed icon
-        if (transitionText.includes("RETRYING") || transitionText.includes("OOPS")) {
-            transitionIconEl.textContent = "🔄";
-        } else {
-            transitionIconEl.textContent = "⚡";
-        }
 
         if (customImage) {
             if (transitionImageEl) {
                 transitionImageEl.src = customImage;
                 transitionImageEl.classList.remove('hidden');
             }
-            if (transitionIconEl) transitionIconEl.classList.add('hidden');
         } else {
             if (transitionImageEl) transitionImageEl.classList.add('hidden');
-            if (transitionIconEl) transitionIconEl.classList.remove('hidden');
         }
     } else {
         // Update transition screen text based on the upcoming step
@@ -7712,21 +7703,12 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
                     transitionImageEl.src = nextStep.image;
                     transitionImageEl.classList.remove('hidden');
                 }
-                if (transitionIconEl) transitionIconEl.classList.add('hidden');
             } else {
                 if (transitionImageEl) transitionImageEl.classList.add('hidden');
-                if (transitionIconEl) {
-                    transitionIconEl.classList.remove('hidden');
-                    transitionIconEl.textContent = nextStep.icon || "⚡";
-                }
             }
         } else {
             transitionTextEl.textContent = "READY FOR BATTLE...";
             transitionDescEl.textContent = "";
-            if (transitionIconEl) {
-                transitionIconEl.classList.remove('hidden');
-                transitionIconEl.textContent = "⚔️";
-            }
             if (transitionImageEl) transitionImageEl.classList.add('hidden');
         }
     }

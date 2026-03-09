@@ -1436,6 +1436,7 @@ body::before {
 
 .transition-content {
     text-align: center;
+    /* Center aligns naturally via parent flex */
     animation: transitionReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -1451,11 +1452,27 @@ body::before {
     }
 }
 
+.transition-text {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: 5px;
+    color: #fff;
+    text-transform: uppercase;
+    margin-bottom: 50px;
+    text-shadow:
+        0 0 20px rgba(0, 240, 255, 0.45),
+        0 0 40px rgba(0, 240, 255, 0.2),
+        0 2px 4px rgba(0, 0, 0, 0.6);
+    padding: 0 20px;
+    line-height: 1.1;
+}
+
 .transition-image {
-    max-width: 80%;
-    max-height: 40vh;
+    max-width: 85%;
+    max-height: 45vh;
     object-fit: contain;
-    margin-bottom: 2rem;
+    margin-bottom: 50px;
     display: block;
     margin-left: auto;
     margin-right: auto;
@@ -1463,10 +1480,37 @@ body::before {
     animation: transitionImageFloat 3s ease-in-out infinite;
 }
 
-.transition-image.hidden {
-    display: none;
+.transition-desc {
+    font-family: var(--font-body);
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 45px;
+    max-width: 540px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.4;
+    padding: 0 20px;
 }
 
+.transition-image.hidden, .transition-desc:empty {
+    display: none;
+    margin-bottom: 0;
+}
+
+/* If image is followed by bar (no desc), give it more margin */
+.transition-image:not(.hidden):last-child,
+.transition-image:not(.hidden) + #transitionBarContainer {
+    margin-top: 15px;
+}
+
+/* Ensure image followed by bar looks right. 
+   Actually, let's just use a sibling selector 
+   to increase image margin if desc is empty. */
+#transitionImage:not(.hidden) + #transitionDesc:empty + #transitionBarContainer {
+    margin-top: 15px;
+}
 @keyframes transitionImageFloat {
 
     0%,
@@ -1479,56 +1523,6 @@ body::before {
     }
 }
 
-.transition-icon {
-    font-size: 4rem;
-    color: var(--neon-cyan);
-    margin-bottom: 20px;
-    text-shadow: 0 0 30px rgba(0, 240, 255, 0.8);
-    animation: iconPulse 1s infinite alternate;
-}
-
-@keyframes iconPulse {
-    from {
-        transform: scale(1);
-        text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
-    }
-
-    to {
-        transform: scale(1.1);
-        text-shadow: 0 0 40px rgba(0, 240, 255, 0.9);
-    }
-}
-
-.transition-text {
-    font-family: var(--font-display);
-    font-size: 1.9rem;
-    font-weight: 900;
-    letter-spacing: 5px;
-    color: #fff;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    text-shadow:
-        0 0 20px rgba(0, 240, 255, 0.45),
-        0 0 40px rgba(0, 240, 255, 0.2),
-        0 2px 4px rgba(0, 0, 0, 0.6);
-}
-
-.transition-desc {
-    font-family: var(--font-body);
-    font-size: 0.95rem;
-    font-weight: 400;
-    letter-spacing: 1px;
-    color: rgba(255, 255, 255, 0.65);
-    margin-bottom: 32px;
-    max-width: 360px;
-    margin-left: auto;
-    margin-right: auto;
-    line-height: 1.5;
-}
-
-.transition-desc:empty {
-    margin-bottom: 30px;
-}
 
 .transition-bar-container {
     width: 300px;
@@ -1854,6 +1848,27 @@ body::before {
         font-size: 0.78rem;
         color: rgba(255, 255, 255, 0.7);
     }
+
+    /* Transition Screen Overrides */
+    .transition-text {
+        font-size: 1.5rem;
+        letter-spacing: 3px;
+        margin-bottom: 35px;
+    }
+
+    .transition-image {
+        max-height: 35vh;
+        margin-bottom: 35px;
+    }
+
+    .transition-desc {
+        font-size: 0.9rem;
+        margin-bottom: 45px;
+        max-width: 94%;
+        padding: 0 10px;
+        line-height: 1.35;
+        color: rgba(255, 255, 255, 0.9);
+    }
 }
 
 /* Very narrow phones (≤480 px) — tighten further */
@@ -1877,6 +1892,24 @@ body::before {
 
     .tutorial-subtext {
         font-size: 0.72rem;
+    }
+
+    /* Transition Screen Overrides */
+    .transition-text {
+        font-size: 1.3rem;
+        letter-spacing: 2px;
+        margin-bottom: 25px;
+    }
+
+    .transition-image {
+        max-height: 30vh;
+        max-width: 90%;
+        margin-bottom: 25px;
+    }
+
+    .transition-desc {
+        font-size: 0.75rem;
+        margin-bottom: 20px;
     }
 }
 
