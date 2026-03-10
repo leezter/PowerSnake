@@ -7794,17 +7794,30 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
         }
     };
 
-    const showOverlayInstantly = () => {
-        // Prevent arena/HUD flicker through a transition fade-in.
-        tutorialTransitionOverlay.classList.add('transition-no-fade');
+    const showOverlay = (instant = false) => {
+        if (instant) {
+            // Prevent arena/HUD flicker through a transition fade-in on the very first reveal.
+            tutorialTransitionOverlay.classList.add('transition-no-fade');
+            tutorialTransitionOverlay.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                tutorialTransitionOverlay.classList.remove('transition-no-fade');
+            });
+            return;
+        }
+
+        tutorialTransitionOverlay.classList.remove('transition-no-fade');
         tutorialTransitionOverlay.classList.remove('hidden');
-        requestAnimationFrame(() => {
-            tutorialTransitionOverlay.classList.remove('transition-no-fade');
-        });
     };
 
     const beginTransitionSetup = () => {
-        showOverlayInstantly();
+        const shouldUseInstantOverlay = shouldPlayWelcomeIntro || overlayWasVisible;
+
+        // Stop game loop while transition is on screen to prevent 'problematic' background behavior
+        gameRunning = false;
+        if (hud) hud.classList.add('hidden');
+        if (tutorialOverlay) tutorialOverlay.classList.add('hidden');
+
+        showOverlay(shouldUseInstantOverlay);
         if (shouldPlayWelcomeIntro && transitionContentEl) {
             transitionContentEl.classList.remove('first-screen-enter');
             void transitionContentEl.offsetWidth;
@@ -7816,11 +7829,6 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
             soundManager.fadeSFX(0.5);
             soundManager.undimBGM();
         }
-
-        // Stop game loop while transition is on screen to prevent 'problematic' background behavior
-        gameRunning = false;
-        if (hud) hud.classList.add('hidden');
-        if (tutorialOverlay) tutorialOverlay.classList.add('hidden');
 
         // Pause a moment, then perform the setup and eventually hide the overlay
         setTimeout(() => {
