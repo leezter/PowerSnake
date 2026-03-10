@@ -141,6 +141,21 @@ body::before {
     display: none;
 }
 
+#startScreen {
+    transform-origin: center center;
+    transition:
+        opacity 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+        transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+        filter 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+#startScreen.tutorial-start-exit {
+    opacity: 0;
+    transform: scale(1.03);
+    filter: blur(8px);
+    pointer-events: none;
+}
+
 /* Helper for tutorial completion forcing a solid black background instead of translucent */
 .overlay.tutorial-black-bg {
     background: #000000 !important;
@@ -1424,8 +1439,9 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at center, rgba(10, 10, 30, 0.9) 0%, rgba(5, 5, 10, 1) 100%);
+    background: radial-gradient(circle at center, rgb(10, 10, 30) 0%, rgb(5, 5, 10) 100%);
     backdrop-filter: blur(15px);
+    overflow: hidden;
     transition: opacity 0.5s ease;
 }
 
@@ -1434,10 +1450,56 @@ body::before {
     pointer-events: none;
 }
 
+.transition-no-fade {
+    transition: none !important;
+}
+
 .transition-content {
     text-align: center;
     /* Center aligns naturally via parent flex */
     animation: transitionReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: min(92vw, 760px);
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: clamp(6px, 1.4vh, 14px) 0;
+    transition:
+        opacity 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+        transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+        filter 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.transition-content.content-swap-out {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.985);
+    filter: blur(2px);
+}
+
+.transition-content.content-swap-in {
+    opacity: 0;
+    transform: translateY(14px) scale(1.015);
+    filter: blur(2px);
+}
+
+.transition-content.first-screen-enter {
+    animation: firstScreenEnter 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes firstScreenEnter {
+    0% {
+        opacity: 0;
+        transform: translateY(34px) scale(0.95);
+        filter: blur(10px);
+    }
+
+    60% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
 }
 
 @keyframes transitionReveal {
@@ -1459,7 +1521,7 @@ body::before {
     letter-spacing: 5px;
     color: #fff;
     text-transform: uppercase;
-    margin-bottom: 80px;
+    margin-bottom: clamp(22px, 6vh, 80px);
     text-shadow:
         0 0 20px rgba(0, 240, 255, 0.45),
         0 0 40px rgba(0, 240, 255, 0.2),
@@ -1472,7 +1534,7 @@ body::before {
     max-width: 85%;
     max-height: 45vh;
     object-fit: contain;
-    margin-bottom: 80px;
+    margin-bottom: clamp(22px, 6vh, 80px);
     display: block;
     margin-left: auto;
     margin-right: auto;
@@ -1486,7 +1548,7 @@ body::before {
     font-weight: 600;
     letter-spacing: 0.5px;
     color: rgba(255, 255, 255, 0.85);
-    margin-bottom: 45px;
+    margin-bottom: clamp(16px, 3.8vh, 45px);
     max-width: 540px;
     margin-left: auto;
     margin-right: auto;
@@ -1500,17 +1562,15 @@ body::before {
     margin-bottom: 0;
 }
 
-/* If image is followed by bar (no desc), give it more margin */
-.transition-image:not(.hidden):last-child,
-.transition-image:not(.hidden)+#transitionBarContainer {
-    margin-top: 15px;
+.transition-action-slot {
+    position: relative;
+    width: min(420px, 80vw);
+    height: clamp(40px, 6.5vh, 58px);
+    margin: 0 auto;
 }
 
-/* Ensure image followed by bar looks right. 
-   Actually, let's just use a sibling selector 
-   to increase image margin if desc is empty. */
-#transitionImage:not(.hidden)+#transitionDesc:empty+#transitionBarContainer {
-    margin-top: 15px;
+#transitionImage:not(.hidden)+#transitionDesc:empty+.transition-action-slot {
+    margin-top: 12px;
 }
 
 @keyframes transitionImageFloat {
@@ -1527,13 +1587,16 @@ body::before {
 
 
 .transition-bar-container {
-    width: 300px;
+    width: min(320px, 76vw);
     height: 4px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 2px;
-    margin: 0 auto;
+    margin: 0;
     overflow: hidden;
-    position: relative;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     transition: opacity 0.4s ease;
 }
 
@@ -1567,10 +1630,15 @@ body::before {
     font-weight: 700;
     letter-spacing: 4px;
     color: var(--neon-cyan);
-    margin-top: 30px;
+    margin-top: 0;
     text-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
     animation: continuePulse 1.5s infinite ease-in-out;
     cursor: pointer;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
     transition: opacity 0.8s ease;
 }
 
@@ -1583,12 +1651,12 @@ body::before {
     0%,
     100% {
         opacity: 0.5;
-        transform: scale(1);
+        transform: translate(-50%, -50%) scale(1);
     }
 
     50% {
         opacity: 1;
-        transform: scale(1.05);
+        transform: translate(-50%, -50%) scale(1.05);
         text-shadow: 0 0 25px rgba(0, 240, 255, 0.8);
     }
 }
@@ -1865,11 +1933,25 @@ body::before {
 
     .transition-desc {
         font-size: 0.9rem;
-        margin-bottom: 45px;
+        margin-bottom: clamp(14px, 3.2vh, 36px);
         max-width: 94%;
         padding: 0 10px;
         line-height: 1.35;
         color: rgba(255, 255, 255, 0.9);
+    }
+
+    .transition-action-slot {
+        width: min(360px, 86vw);
+        height: clamp(42px, 7vh, 60px);
+    }
+
+    .transition-bar-container {
+        width: min(280px, 72vw);
+    }
+
+    .transition-continue {
+        font-size: 0.82rem;
+        letter-spacing: 3px;
     }
 }
 
@@ -1912,6 +1994,19 @@ body::before {
     .transition-desc {
         font-size: 0.75rem;
         margin-bottom: 20px;
+    }
+
+    .transition-action-slot {
+        width: min(320px, 88vw);
+    }
+
+    .transition-bar-container {
+        width: min(240px, 74vw);
+    }
+
+    .transition-continue {
+        font-size: 0.74rem;
+        letter-spacing: 2.2px;
     }
 }
 

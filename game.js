@@ -3570,6 +3570,7 @@ const transitionDescEl = document.getElementById('transitionDesc');
 const transitionImageEl = document.getElementById('transitionImage');
 const transitionBarContainer = document.getElementById('transitionBarContainer');
 const transitionContinue = document.getElementById('transitionContinue');
+const transitionContentEl = tutorialTransitionOverlay ? tutorialTransitionOverlay.querySelector('.transition-content') : null;
 
 let tutorialActive = false;
 let tutorialStep = -1;
@@ -7696,10 +7697,13 @@ function startTutorial(isReplay) {
     // Elements are spawned progressively as each tutorial step introduces them
 
     // UI
-    startScreen.classList.add('hidden');
+    const shouldAnimateMenuExit = !!(startScreen && !startScreen.classList.contains('hidden'));
+    if (shouldAnimateMenuExit) {
+        startScreen.classList.add('tutorial-start-exit');
+    }
     deathScreen.classList.add('hidden');
-    hud.classList.remove('hidden');
-    tutorialOverlay.classList.remove('hidden');
+    hud.classList.add('hidden');
+    tutorialOverlay.classList.add('hidden');
 
     soundManager.playStart();
     if (typeof soundManager !== 'undefined' && soundManager) {
@@ -7707,14 +7711,27 @@ function startTutorial(isReplay) {
         soundManager.dimBGM();
     }
 
-    gameRunning = true;
+    gameRunning = false;
     deathTime = 0;
     lastTime = performance.now();
     if (animationId) cancelAnimationFrame(animationId);
-    animationId = requestAnimationFrame(gameLoop);
+    animationId = null;
 
-    // Start first step after a brief delay
-    setTimeout(() => advanceTutorialStep(), 500);
+    // Smoothly transition from menu into the existing Welcome screen.
+    const beginTutorialTransitions = () => {
+        if (!tutorialActive) return;
+        advanceTutorialStep();
+        if (startScreen) {
+            startScreen.classList.remove('tutorial-start-exit');
+            startScreen.classList.add('hidden');
+        }
+    };
+
+    if (shouldAnimateMenuExit) {
+        setTimeout(beginTutorialTransitions, 550);
+    } else {
+        beginTutorialTransitions();
+    }
 }
 
 function advanceTutorialStep() {
@@ -7735,126 +7752,182 @@ function advanceTutorialStep() {
 function showTutorialTransition(callback, transitionText = null, transitionDesc = null, customImage = null) {
     if (tutorialInTransition) return;
     tutorialInTransition = true;
+    const overlayWasVisible = tutorialTransitionOverlay && !tutorialTransitionOverlay.classList.contains('hidden');
+    const shouldPlayWelcomeIntro = !overlayWasVisible && tutorialStep < 0;
 
     // Reset transition UI state
     if (transitionBarContainer) transitionBarContainer.classList.remove('hidden');
     if (transitionContinue) transitionContinue.classList.add('hidden');
+    if (transitionContentEl) {
+        transitionContentEl.classList.remove('content-swap-out', 'content-swap-in');
+    }
     tutorialTransitionOverlay.onclick = null; // Clear previous listener
 
-    if (transitionText) {
-        transitionTextEl.textContent = transitionText;
-        transitionDescEl.textContent = transitionDesc || "";
+    const applyTransitionContent = () => {
+        if (transitionText) {
+            transitionTextEl.textContent = transitionText;
+            transitionDescEl.textContent = transitionDesc || "";
 
-        if (customImage) {
-            if (transitionImageEl) {
-                transitionImageEl.src = customImage;
-                transitionImageEl.classList.remove('hidden');
-            }
-        } else {
-            if (transitionImageEl) transitionImageEl.classList.add('hidden');
-        }
-    } else {
-        // Update transition screen text based on the upcoming step
-        const nextStepIdx = Math.floor(tutorialStep) + 1;
-        if (nextStepIdx < TUTORIAL_TOTAL_STEPS) {
-            const nextStep = TUTORIAL_STEPS[nextStepIdx];
-            transitionTextEl.textContent = nextStep.transitionText || nextStep.message;
-            transitionDescEl.textContent = nextStep.transitionDesc || "";
-
-            if (nextStep.image) {
+            if (customImage) {
                 if (transitionImageEl) {
-                    transitionImageEl.src = nextStep.image;
+                    transitionImageEl.src = customImage;
                     transitionImageEl.classList.remove('hidden');
                 }
             } else {
                 if (transitionImageEl) transitionImageEl.classList.add('hidden');
             }
         } else {
-            transitionTextEl.textContent = "READY FOR BATTLE...";
-            transitionDescEl.textContent = "";
-            if (transitionImageEl) transitionImageEl.classList.add('hidden');
+            // Update transition screen text based on the upcoming step
+            const nextStepIdx = Math.floor(tutorialStep) + 1;
+            if (nextStepIdx < TUTORIAL_TOTAL_STEPS) {
+                const nextStep = TUTORIAL_STEPS[nextStepIdx];
+                transitionTextEl.textContent = nextStep.transitionText || nextStep.message;
+                transitionDescEl.textContent = nextStep.transitionDesc || "";
+
+                if (nextStep.image) {
+                    if (transitionImageEl) {
+                        transitionImageEl.src = nextStep.image;
+                        transitionImageEl.classList.remove('hidden');
+                    }
+                } else {
+                    if (transitionImageEl) transitionImageEl.classList.add('hidden');
+                }
+            } else {
+                transitionTextEl.textContent = "READY FOR BATTLE...";
+                transitionDescEl.textContent = "";
+                if (transitionImageEl) transitionImageEl.classList.add('hidden');
+            }
         }
+    };
+
+    const showOverlayInstantly = () => {
+        // Prevent arena/HUD flicker through a transition fade-in.
+        tutorialTransitionOverlay.classList.add('transition-no-fade');
+        tutorialTransitionOverlay.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            tutorialTransitionOverlay.classList.remove('transition-no-fade');
+        });
+    };
+
+    const beginTransitionSetup = () => {
+        showOverlayInstantly();
+        if (shouldPlayWelcomeIntro && transitionContentEl) {
+            transitionContentEl.classList.remove('first-screen-enter');
+            void transitionContentEl.offsetWidth;
+            transitionContentEl.classList.add('first-screen-enter');
+        }
+
+        // Fade out audio gracefully
+        if (typeof soundManager !== 'undefined' && soundManager) {
+            soundManager.fadeSFX(0.5);
+            soundManager.undimBGM();
+        }
+
+        // Stop game loop while transition is on screen to prevent 'problematic' background behavior
+        gameRunning = false;
+        if (hud) hud.classList.add('hidden');
+        if (tutorialOverlay) tutorialOverlay.classList.add('hidden');
+
+        // Pause a moment, then perform the setup and eventually hide the overlay
+        setTimeout(() => {
+            // Reset advancement flag to prevent double-triggers
+            tutorialStepAdvancePending = false;
+
+            // Guarantee player is alive and state is clean BEFORE we setup the step
+            if (player) {
+                player.alive = true;
+                player.boosting = false;
+                player.boostIntensity = 0;
+                player.boostTimer = 0;
+                if (typeof soundManager !== 'undefined' && soundManager) {
+                    soundManager.updateBoostHum(0); // explicitly cancel active boost noise
+                }
+                player.foodEaten = 0; // Reset speed boost from food
+                player.segments = player.segments.slice(0, 15); // Reset length to base
+                deathScreen.classList.add('hidden');
+                deathTime = 0;
+            }
+
+            // Clean slate for the arena to prevent step leakage
+            foods = [];
+            particles = [];
+            floatingTexts = [];
+            // Clear all snakes except player
+            if (player) {
+                snakes = [player];
+            } else {
+                snakes = [];
+            }
+
+            callback(); // Call performStepAdvance or performReset... which does the specific setup
+
+            // Final safety check: ensure player is in snakes array
+            if (player && !snakes.includes(player)) {
+                snakes.unshift(player);
+            }
+
+            // Force a single render frame to reveal the new setup behind the transition overlay
+            render();
+
+            // --- NEW: Transition Ready State ---
+            // Hide loading bar and show "Tap to continue" prompt
+            if (transitionBarContainer) transitionBarContainer.classList.add('hidden');
+            if (transitionContinue) transitionContinue.classList.remove('hidden');
+
+            // Add dismiss listener
+            tutorialTransitionOverlay.onclick = () => {
+                tutorialTransitionOverlay.onclick = null; // Prevent double trigger
+                tutorialInTransition = false;
+
+                // Step 0 is a pure intro card: immediately chain into step 1 transition.
+                const shouldChainToNextTransition = tutorialActive && tutorialStep === 0;
+
+                // Play a small click/confirm sound
+                if (soundManager && soundManager.ctx) {
+                    soundManager.restoreSFX(0.01);
+                    soundManager.playTone({ freq: 600, type: 'triangle', duration: 0.1, vol: 0.2, slide: 100 });
+                    if (!shouldChainToNextTransition) {
+                        soundManager.dimBGM();
+                    }
+                }
+
+                if (shouldChainToNextTransition) {
+                    advanceTutorialStep();
+                    return;
+                }
+
+                tutorialTransitionOverlay.classList.add('hidden');
+                if (hud) hud.classList.remove('hidden');
+                if (tutorialOverlay) tutorialOverlay.classList.remove('hidden');
+
+                // Resume game if still in tutorial and NOT in the final message step (which should stay frozen)
+                if (tutorialActive && tutorialStep < TUTORIAL_TOTAL_STEPS - 1) {
+                    gameRunning = true;
+                    lastTime = performance.now();
+                    requestAnimationFrame(gameLoop);
+                }
+            };
+        }, 2000);
+    };
+
+    if (overlayWasVisible && transitionContentEl) {
+        transitionContentEl.classList.add('content-swap-out');
+        setTimeout(() => {
+            applyTransitionContent();
+            transitionContentEl.classList.remove('content-swap-out');
+            transitionContentEl.classList.add('content-swap-in');
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    transitionContentEl.classList.remove('content-swap-in');
+                });
+            });
+            beginTransitionSetup();
+        }, 480);
+        return;
     }
 
-    tutorialTransitionOverlay.classList.remove('hidden');
-
-    // Fade out audio gracefully
-    if (typeof soundManager !== 'undefined' && soundManager) {
-        soundManager.fadeSFX(0.5);
-        soundManager.undimBGM();
-    }
-
-    // Stop game loop while transition is on screen to prevent 'problematic' background behavior
-    gameRunning = false;
-
-    // Pause a moment, then perform the setup and eventually hide the overlay
-    setTimeout(() => {
-        // Reset advancement flag to prevent double-triggers
-        tutorialStepAdvancePending = false;
-
-        // Guarantee player is alive and state is clean BEFORE we setup the step
-        if (player) {
-            player.alive = true;
-            player.boosting = false;
-            player.boostIntensity = 0;
-            player.boostTimer = 0;
-            if (typeof soundManager !== 'undefined' && soundManager) {
-                soundManager.updateBoostHum(0); // explicitly cancel active boost noise
-            }
-            player.foodEaten = 0; // Reset speed boost from food
-            player.segments = player.segments.slice(0, 15); // Reset length to base
-            deathScreen.classList.add('hidden');
-            hud.classList.remove('hidden');
-            deathTime = 0;
-        }
-
-        // Clean slate for the arena to prevent step leakage
-        foods = [];
-        particles = [];
-        floatingTexts = [];
-        // Clear all snakes except player
-        if (player) {
-            snakes = [player];
-        } else {
-            snakes = [];
-        }
-
-        callback(); // Call performStepAdvance or performReset... which does the specific setup
-
-        // Final safety check: ensure player is in snakes array
-        if (player && !snakes.includes(player)) {
-            snakes.unshift(player);
-        }
-
-        // Force a single render frame to reveal the new setup behind the transition overlay
-        render();
-
-        // --- NEW: Transition Ready State ---
-        // Hide loading bar and show "Tap to continue" prompt
-        if (transitionBarContainer) transitionBarContainer.classList.add('hidden');
-        if (transitionContinue) transitionContinue.classList.remove('hidden');
-
-        // Add dismiss listener
-        tutorialTransitionOverlay.onclick = () => {
-            tutorialTransitionOverlay.onclick = null; // Prevent double trigger
-            tutorialInTransition = false;
-            tutorialTransitionOverlay.classList.add('hidden');
-
-            // Play a small click/confirm sound
-            if (soundManager && soundManager.ctx) {
-                soundManager.restoreSFX(0.01);
-                soundManager.playTone({ freq: 600, type: 'triangle', duration: 0.1, vol: 0.2, slide: 100 });
-                soundManager.dimBGM();
-            }
-
-            // Resume game if still in tutorial and NOT in the final message step (which should stay frozen)
-            if (tutorialActive && tutorialStep < TUTORIAL_TOTAL_STEPS - 1) {
-                gameRunning = true;
-                lastTime = performance.now();
-                requestAnimationFrame(gameLoop);
-            }
-        };
-    }, 2000);
+    applyTransitionContent();
+    beginTransitionSetup();
 }
 
 function performStepAdvance() {
@@ -8353,9 +8426,14 @@ function spawnTutorialKillBot() {
 }
 
 function resetTutorialKillScenario(customText, customImage = null) {
+    const combatStep = TUTORIAL_STEPS[4] || {};
+    const transitionText = customText || combatStep.transitionText || "RESETTING COMBAT CHALLENGE...";
+    const transitionDesc = combatStep.transitionDesc || "";
+    const transitionImage = customImage || combatStep.image || null;
+
     showTutorialTransition(() => {
         performResetTutorialKillScenario();
-    }, customText || "RESETTING COMBAT CHALLENGE...", null, customImage);
+    }, transitionText, transitionDesc, transitionImage);
 }
 
 function performResetTutorialKillScenario() {
@@ -8564,6 +8642,7 @@ if (tutorialButton) {
 
 function goToHomeScreen() {
     gameRunning = false;
+    tutorialInTransition = false;
     soundManager.resume(); // Ensure context is active
 
     // Ensure continuous SFX are killed
@@ -8579,13 +8658,21 @@ function goToHomeScreen() {
         tutorialOverlay.classList.remove('tutorial-black-bg');
         tutorialOverlay.classList.add('hidden');
     }
+    if (tutorialTransitionOverlay) {
+        tutorialTransitionOverlay.onclick = null;
+        tutorialTransitionOverlay.classList.remove('transition-no-fade');
+        tutorialTransitionOverlay.classList.add('hidden');
+    }
     tutorialActive = false;
     if (typeof snakeSelectionScreen !== 'undefined') {
         snakeSelectionScreen.classList.add('hidden');
     }
 
     // Show Start Screen
-    if (startScreen) startScreen.classList.remove('hidden');
+    if (startScreen) {
+        startScreen.classList.remove('tutorial-start-exit');
+        startScreen.classList.remove('hidden');
+    }
     updateNextUnlockTeaser();
 
     // Reset inputs
