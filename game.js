@@ -3588,13 +3588,76 @@ let tutorialLastDir = -1;
 
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
-    { icon: '✦', image: 'tutorial_welcome.png', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 4.5, type: 'auto', transitionText: 'WELCOME TO THE NEON ARENA!', transitionDesc: 'Hunt energy to grow, outsmart rivals, and become the King of the Arena. Unlock 70+ unique snakes as you rule the leaderboard!' },
-    { icon: '🕹️', image: 'tutorial_joystick.png', message: 'BASIC MOVEMENT', subtext: 'Moves: 0 / 4', duration: 0, type: 'action', transitionText: 'SWIPE OR DRAG TO STEER' },
-    { icon: '🟢', image: 'tutorial_pellets.png', message: 'GATHERING ENERGY', subtext: 'Energy Pellets: 0 / 10', duration: 0, type: 'action', transitionText: 'COLLECT ENERGY PELLETS TO GROW!' },
-    { icon: '⚡', image: 'tutorial_boost.png', message: 'PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionText: 'SLITHER NEAR RIVALS TO CHARGE BOOST' },
-    { icon: '💀', image: 'tutorial_combat.png', message: 'COMBAT TACTICS', subtext: 'Cut off opponents to force them to crash into your body. You will gain points and grow larger by stealing their energy!', duration: 0, type: 'action', transitionText: 'CUT OFF ENEMIES TO STEAL ENERGY' },
-    { icon: '👑', image: 'tutorial_king.png', message: 'KING OF THE ARENA', subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!', duration: 0, type: 'action', transitionText: 'REACH 100 POINTS TO WIN' },
-    { icon: '🏆', image: 'tutorial_complete.png', message: 'TUTORIAL COMPLETE!', subtext: 'Now go dominate the arena, King!', duration: 3.5, type: 'auto', transitionText: 'DOMINATE THE ARENA!' }
+    {
+        icon: '✦',
+        image: 'tutorial_welcome.png',
+        message: 'WELCOME TO POWERSNAKE!',
+        subtext: 'Prepare for high-speed arcade action...',
+        duration: 4.5,
+        type: 'auto',
+        transitionText: 'WELCOME TO POWERSNAKE',
+        transitionDesc: 'Grow your snake by devouring energy, crushing rivals, and dominating the arena. The bigger you get, the more points you earn and the more of 70+ unique snakes you unlock. Survival is key!'
+    },
+    {
+        icon: '🕹️',
+        image: 'tutorial_joystick.png',
+        message: 'BASIC MOVEMENT',
+        subtext: 'Moves: 0 / 4',
+        duration: 0,
+        type: 'action',
+        transitionText: 'LEARN THE CONTROLS',
+        transitionDesc: 'Swipe or drag anywhere on the screen to steer your snake. Stay smooth, stay sharp.'
+    },
+    {
+        icon: '🟢',
+        image: 'tutorial_pellets.png',
+        message: 'GATHERING ENERGY',
+        subtext: 'Energy Pellets: 0 / 10',
+        duration: 0,
+        type: 'action',
+        transitionText: 'GROW WITH ENERGY',
+        transitionDesc: 'Collect energy pellets to grow longer and score higher. Keep moving and keep feeding.'
+    },
+    {
+        icon: '⚡',
+        image: 'tutorial_boost.png',
+        message: 'PROXIMITY BOOST',
+        subtext: 'Slither close and parallel to rival snakes to build up a speed boost! (0/3)',
+        duration: 0,
+        type: 'action',
+        transitionText: 'MASTER THE BOOST',
+        transitionDesc: 'Glide close and parallel to a rival snake to trigger a Proximity Boost.'
+    },
+    {
+        icon: '💀',
+        image: 'tutorial_combat.png',
+        message: 'COMBAT TACTICS',
+        subtext: 'Cut off opponents to force them to crash into your body. Gain points and grow larger by stealing their energy!',
+        duration: 0,
+        type: 'action',
+        transitionText: 'ELIMINATE A RIVAL',
+        transitionDesc: 'Use the Proximity Boost to cut in front of your target and make it crash into your body. Defeated snakes leave behind Energy Pellets, making kills the fastest way to grow and score points.'
+    },
+    {
+        icon: '👑',
+        image: 'tutorial_king.png',
+        message: 'KING OF THE ARENA',
+        subtext: 'Survive, eat, and eliminate rivals to reach 100 points! Win to unlock over 70 unique snakes!',
+        duration: 0,
+        type: 'action',
+        transitionText: 'FINAL TRIAL',
+        transitionDesc: 'Your training ends here. Put your skills to the test against real rivals in the arena. Reach 100 score to earn your first snake unlock'
+    },
+    {
+        icon: '🏆',
+        image: 'tutorial_complete.png',
+        message: 'TUTORIAL COMPLETE!',
+        subtext: 'Now go dominate the arena, King!',
+        duration: 3.5,
+        type: 'auto',
+        transitionText: 'TRAINING COMPLETE',
+        transitionDesc: 'You are battle-ready. First completion unlocks GLITCH.'
+    }
 ];
 
 // ---- Resize ----
@@ -5463,7 +5526,7 @@ function onPlayerDeath() {
             // Show a quick tip message
             if (tutorialMessageEl) {
                 tutorialMessageEl.textContent = 'OOPS! TRY AGAIN!';
-                tutorialSubtextEl.textContent = "Don't worry—you've been respawned!";
+                tutorialSubtextEl.textContent = "Don't worry, you've been respawned!";
             }
             // If on boost step, re-setup the boost scenario (preserving count)
             if (Math.floor(tutorialStep) === 3) {
@@ -7954,7 +8017,7 @@ function updateTutorial(dt) {
                 }
 
                 if (shouldReset) {
-                    resetTutorialBoostScenario("SPEED LOST! RETRYING...");
+                    resetTutorialBoostScenario();
                     break;
                 }
 
@@ -7973,11 +8036,11 @@ function updateTutorial(dt) {
                         setTimeout(() => {
                             tutorialStepAdvancePending = false;
                             if (tutorialBoostCount === 2) {
-                                resetTutorialBoostScenario("SUPER BOOST: EAT PELLETS WHILE BOOSTING!", "tutorial_super_boost.png");
+                                resetTutorialBoostScenario(null, "tutorial_super_boost.png");
                             } else if (tutorialBoostCount === 1) {
-                                resetTutorialBoostScenario("STEER CLOSER TO THE RIVAL SNAKE!", "tutorial_steer_closer.png");
+                                resetTutorialBoostScenario(null, "tutorial_steer_closer.png");
                             } else {
-                                resetTutorialBoostScenario("NICE! NEXT LAP...", "tutorial_boost.png");
+                                resetTutorialBoostScenario(null, "tutorial_boost.png");
                             }
                         }, 3000);
                     }
@@ -8005,14 +8068,14 @@ function updateTutorial(dt) {
             {
                 if (!tutorialStepAdvancePending) {
                     if (!player.alive) {
-                        resetTutorialKillScenario("YOU DIED! RETRYING...", "tutorial_combat.png");
+                        resetTutorialKillScenario("YOU CRASHED. TRY AGAIN.", "tutorial_combat.png");
                         break;
                     }
                     if (tutorialDummyBot && tutorialDummyBot.alive) {
                         const dx = player.x - tutorialDummyBot.x;
                         const dy = player.y - tutorialDummyBot.y;
                         if (dx * dx + dy * dy > 1500 * 1500) {
-                            resetTutorialKillScenario("RIVAL ESCAPED! RETRYING...", "tutorial_combat.png");
+                            resetTutorialKillScenario("TARGET ESCAPED. TRY AGAIN.", "tutorial_combat.png");
                             break;
                         }
                     }
@@ -8024,7 +8087,7 @@ function updateTutorial(dt) {
                             setTimeout(() => advanceTutorialStep(), 1200);
                         } else {
                             // If the bot died by crashing into a wall, restart
-                            resetTutorialKillScenario("RIVAL CRASHED! RETRYING...", "tutorial_combat.png");
+                            resetTutorialKillScenario("WALL CRASH DOES NOT COUNT.", "tutorial_combat.png");
                             break;
                         }
                     }
@@ -8072,10 +8135,21 @@ function spawnTutorialFood() {
     }
 }
 
-function resetTutorialBoostScenario(customText, customImage = null) {
+function getBoostGoalTransitionDesc() {
+    if (tutorialBoostCount <= 0) {
+        return 'Glide close and parallel to a rival snake to trigger a Proximity Boost.';
+    }
+    if (tutorialBoostCount === 1) {
+        return 'Practice run: Steer your snake closer to the rival snake to catch a Proximity Boost.';
+    }
+    return 'Proximity Boost + Energy Pellets = Super Boost! Lock into boost proximity and eat the pellet line to ignite Super Boost.';
+}
+
+function resetTutorialBoostScenario(customDesc = null, customImage = null) {
+    const goalDesc = customDesc || getBoostGoalTransitionDesc();
     showTutorialTransition(() => {
         performResetTutorialBoostScenario();
-    }, customText || "RETRYING CHALLENGE...", null, customImage);
+    }, 'MASTER THE BOOST', goalDesc, customImage);
 }
 
 function performResetTutorialBoostScenario() {
@@ -8281,7 +8355,7 @@ function spawnTutorialKillBot() {
 function resetTutorialKillScenario(customText, customImage = null) {
     showTutorialTransition(() => {
         performResetTutorialKillScenario();
-    }, customText || "RETRYING CHALLENGE...", null, customImage);
+    }, customText || "RESETTING COMBAT CHALLENGE...", null, customImage);
 }
 
 function performResetTutorialKillScenario() {
