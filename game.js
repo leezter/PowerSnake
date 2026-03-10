@@ -4967,8 +4967,8 @@ function drawSnake(snake) {
 
     ctx.restore();
 
-    // King crown
-    if (currentKing === snake) {
+    // Hide player crown during tutorial only; keep normal crown behavior elsewhere.
+    if (currentKing === snake && !(tutorialActive && snake.isPlayer)) {
         drawCrown(snake.x, snake.y - w - 15);
     }
 
