@@ -8229,11 +8229,18 @@ function getBoostGoalSubtext(boostCount = tutorialBoostCount) {
     return `Slither close and parallel to another snake to charge your boost! (${goalIndex}/3)`;
 }
 
+function getBoostGoalTransitionImage(boostCount = tutorialBoostCount) {
+    if (boostCount >= 2) return 'tutorial_super_boost.png';
+    if (boostCount === 1) return 'tutorial_steer_closer.png';
+    return 'tutorial_boost.png';
+}
+
 function resetTutorialBoostScenario(customDesc = null, customImage = null) {
     const goalDesc = customDesc || getBoostGoalTransitionDesc();
+    const goalImage = customImage || getBoostGoalTransitionImage();
     showTutorialTransition(() => {
         performResetTutorialBoostScenario();
-    }, 'MASTER THE BOOST', goalDesc, customImage);
+    }, 'MASTER THE BOOST', goalDesc, goalImage);
 }
 
 function performResetTutorialBoostScenario() {
