@@ -1459,7 +1459,7 @@ body::before {
     letter-spacing: 5px;
     color: #fff;
     text-transform: uppercase;
-    margin-bottom: 50px;
+    margin-bottom: 80px;
     text-shadow:
         0 0 20px rgba(0, 240, 255, 0.45),
         0 0 40px rgba(0, 240, 255, 0.2),
@@ -1472,7 +1472,7 @@ body::before {
     max-width: 85%;
     max-height: 45vh;
     object-fit: contain;
-    margin-bottom: 50px;
+    margin-bottom: 80px;
     display: block;
     margin-left: auto;
     margin-right: auto;
@@ -1855,12 +1855,12 @@ body::before {
     .transition-text {
         font-size: 1.5rem;
         letter-spacing: 3px;
-        margin-bottom: 25px;
+        margin-bottom: 45px;
     }
 
     .transition-image {
         max-height: 35vh;
-        margin-bottom: 25px;
+        margin-bottom: 45px;
     }
 
     .transition-desc {
@@ -1900,13 +1900,13 @@ body::before {
     .transition-text {
         font-size: 1.3rem;
         letter-spacing: 2px;
-        margin-bottom: 15px;
+        margin-bottom: 35px;
     }
 
     .transition-image {
         max-height: 30vh;
         max-width: 90%;
-        margin-bottom: 15px;
+        margin-bottom: 35px;
     }
 
     .transition-desc {
