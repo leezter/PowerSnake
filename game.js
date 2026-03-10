@@ -8693,6 +8693,11 @@ function goToHomeScreen() {
     }
     updateNextUnlockTeaser();
 
+    // Normalize history so "Back to Home" from death always has a home state to land on.
+    if (!history.state || history.state.page !== 'home') {
+        history.replaceState({ page: 'home' }, 'Home');
+    }
+
     // Reset inputs
     if (nicknameInput) nicknameInput.focus();
 }
