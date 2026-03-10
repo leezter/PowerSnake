@@ -3623,7 +3623,7 @@ const TUTORIAL_STEPS = [
         icon: '⚡',
         image: 'tutorial_boost.png',
         message: 'PROXIMITY BOOST',
-        subtext: 'Slither close and parallel to rival snakes to build up a speed boost! (0/3)',
+        subtext: 'Slither close and parallel to another snake to charge your boost! (1/3)',
         duration: 0,
         type: 'action',
         transitionText: 'MASTER THE BOOST',
@@ -5535,13 +5535,7 @@ function onPlayerDeath() {
                     if (tutorialActive && Math.floor(tutorialStep) === 3) {
                         spawnTutorialBoostBot();
                         tutorialMessageEl.textContent = TUTORIAL_STEPS[3].message;
-                        if (tutorialBoostCount === 2) {
-                            tutorialSubtextEl.textContent = `Eat the line of pellets while boosting for a SUPER BOOST! (2/3)`;
-                        } else if (tutorialBoostCount === 1) {
-                            tutorialSubtextEl.textContent = `Steer closer to the rival snake to gain a boost! (1/3)`;
-                        } else {
-                            tutorialSubtextEl.textContent = `Slither close and parallel to another snake to build up a speed boost! (${tutorialBoostCount}/3)`;
-                        }
+                        tutorialSubtextEl.textContent = getBoostGoalSubtext();
                     }
                 }, 1500);
             } else {
@@ -8121,13 +8115,7 @@ function updateTutorial(dt) {
                     // Still boosting, update display
                     tutorialSubtextEl.textContent = `\u26A1 BOOSTING! (${tutorialBoostCount}/3)`;
                 } else if (!isBoosting && tutorialBoostCount > 0 && tutorialBoostCount < 3) {
-                    if (tutorialBoostCount === 2) {
-                        tutorialSubtextEl.textContent = `Eat the line of pellets while boosting for a SUPER BOOST! (2/3)`;
-                    } else if (tutorialBoostCount === 1) {
-                        tutorialSubtextEl.textContent = `Steer closer to the rival snake to gain a boost! (1/3)`;
-                    } else {
-                        tutorialSubtextEl.textContent = `Slither close and parallel to another snake to charge your boost! (${tutorialBoostCount}/3)`;
-                    }
+                    tutorialSubtextEl.textContent = getBoostGoalSubtext();
                 }
                 tutorialWasBoosting = isBoosting;
             }
@@ -8218,6 +8206,21 @@ function getBoostGoalTransitionDesc() {
     return 'Proximity Boost + Energy Pellets = Super Boost! Lock into boost proximity and eat the pellet line to ignite Super Boost.';
 }
 
+function getBoostGoalDisplayIndex(boostCount = tutorialBoostCount) {
+    return Math.min(3, Math.max(1, boostCount + 1));
+}
+
+function getBoostGoalSubtext(boostCount = tutorialBoostCount) {
+    const goalIndex = getBoostGoalDisplayIndex(boostCount);
+    if (boostCount >= 2) {
+        return `Eat the line of pellets while boosting for a SUPER BOOST! (${goalIndex}/3)`;
+    }
+    if (boostCount === 1) {
+        return `Steer closer to the rival snake to gain a boost! (${goalIndex}/3)`;
+    }
+    return `Slither close and parallel to another snake to charge your boost! (${goalIndex}/3)`;
+}
+
 function resetTutorialBoostScenario(customDesc = null, customImage = null) {
     const goalDesc = customDesc || getBoostGoalTransitionDesc();
     showTutorialTransition(() => {
@@ -8275,13 +8278,7 @@ function performResetTutorialBoostScenario() {
     camera.stX = camera.x;
     camera.stY = camera.y;
 
-    if (tutorialBoostCount === 2) {
-        tutorialSubtextEl.textContent = `Eat the line of pellets while boosting for a SUPER BOOST! (2/3)`;
-    } else if (tutorialBoostCount === 1) {
-        tutorialSubtextEl.textContent = `Steer closer to the rival snake to gain a boost! (1/3)`;
-    } else {
-        tutorialSubtextEl.textContent = `Slither close and parallel to another snake to charge your boost! (${tutorialBoostCount}/3)`;
-    }
+    tutorialSubtextEl.textContent = getBoostGoalSubtext();
 }
 
 function spawnTutorialBoostBot() {
