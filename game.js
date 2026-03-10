@@ -3588,7 +3588,7 @@ let tutorialLastDir = -1;
 
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
-    { icon: '✦', image: 'tutorial_welcome.png', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 4.5, type: 'auto', transitionText: 'WELCOME TO THE NEON ARENA!', transitionDesc: 'Dominate the arena, collect energy, and become the King. Unlock over 70 unique snake styles as you grow!' },
+    { icon: '✦', image: 'tutorial_welcome.png', message: 'WELCOME TO POWERSNAKE!', subtext: 'Prepare for high-speed arcade action...', duration: 4.5, type: 'auto', transitionText: 'WELCOME TO THE NEON ARENA!', transitionDesc: 'Hunt energy to grow, outsmart rivals, and become the King of the Arena. Unlock 70+ unique snakes as you rule the leaderboard!' },
     { icon: '🕹️', image: 'tutorial_joystick.png', message: 'BASIC MOVEMENT', subtext: 'Moves: 0 / 4', duration: 0, type: 'action', transitionText: 'SWIPE OR DRAG TO STEER' },
     { icon: '🟢', image: 'tutorial_pellets.png', message: 'GATHERING ENERGY', subtext: 'Energy Pellets: 0 / 10', duration: 0, type: 'action', transitionText: 'COLLECT ENERGY PELLETS TO GROW!' },
     { icon: '⚡', image: 'tutorial_boost.png', message: 'PROXIMITY BOOST', subtext: 'Slither close and parallel to another snake to build up a speed boost! (0/3)', duration: 0, type: 'action', transitionText: 'SLITHER NEAR RIVALS TO CHARGE BOOST' },

@@ -1494,23 +1494,25 @@ body::before {
     padding: 0 20px;
 }
 
-.transition-image.hidden, .transition-desc:empty {
+.transition-image.hidden,
+.transition-desc:empty {
     display: none;
     margin-bottom: 0;
 }
 
 /* If image is followed by bar (no desc), give it more margin */
 .transition-image:not(.hidden):last-child,
-.transition-image:not(.hidden) + #transitionBarContainer {
+.transition-image:not(.hidden)+#transitionBarContainer {
     margin-top: 15px;
 }
 
 /* Ensure image followed by bar looks right. 
    Actually, let's just use a sibling selector 
    to increase image margin if desc is empty. */
-#transitionImage:not(.hidden) + #transitionDesc:empty + #transitionBarContainer {
+#transitionImage:not(.hidden)+#transitionDesc:empty+#transitionBarContainer {
     margin-top: 15px;
 }
+
 @keyframes transitionImageFloat {
 
     0%,
@@ -1853,12 +1855,12 @@ body::before {
     .transition-text {
         font-size: 1.5rem;
         letter-spacing: 3px;
-        margin-bottom: 35px;
+        margin-bottom: 25px;
     }
 
     .transition-image {
         max-height: 35vh;
-        margin-bottom: 35px;
+        margin-bottom: 25px;
     }
 
     .transition-desc {
@@ -1898,13 +1900,13 @@ body::before {
     .transition-text {
         font-size: 1.3rem;
         letter-spacing: 2px;
-        margin-bottom: 25px;
+        margin-bottom: 15px;
     }
 
     .transition-image {
         max-height: 30vh;
         max-width: 90%;
-        margin-bottom: 25px;
+        margin-bottom: 15px;
     }
 
     .transition-desc {
