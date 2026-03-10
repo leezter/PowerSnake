@@ -3576,6 +3576,7 @@ let tutorialActive = false;
 let tutorialStep = -1;
 let tutorialStepTimer = 0;
 let tutorialCompleted = false; // loaded from localStorage
+let tutorialStarted = false; // loaded from localStorage (started at least once, completed or skipped)
 let tutorialIsReplay = false; // true when replaying from menu button
 let tutorialInTransition = false;
 let tutorialFoodEatenCount = 0;
@@ -6228,25 +6229,27 @@ class SoundManager {
 
         if (!this.ctx || !this.bgmGain) return;
         const now = this.ctx.currentTime;
-        this.bgmGain.gain.cancelScheduledValues(now);
-        this.bgmGain.gain.setValueAtTime(this.bgmGain.gain.value, now);
-        this.bgmGain.gain.linearRampToValueAtTime(0.001, now + 1.0);
+        const bgmGainToStop = this.bgmGain;
+        const nodesToStop = this.bgmNodes || [];
 
-        const nodes = this.bgmNodes;
+        // Clear active refs immediately so a quick restart creates a fresh BGM chain.
+        this.bgmGain = null;
         this.bgmNodes = [];
-        nodes.forEach(n => {
+
+        bgmGainToStop.gain.cancelScheduledValues(now);
+        bgmGainToStop.gain.setValueAtTime(bgmGainToStop.gain.value, now);
+        bgmGainToStop.gain.linearRampToValueAtTime(0.001, now + 1.0);
+
+        nodesToStop.forEach(n => {
             if (n.stop) {
                 try { n.stop(now + 1.0); } catch (e) { }
             }
         });
         setTimeout(() => {
-            nodes.forEach(n => {
+            nodesToStop.forEach(n => {
                 if (n.disconnect) n.disconnect();
             });
-            if (this.bgmGain) {
-                this.bgmGain.disconnect();
-                this.bgmGain = null;
-            }
+            bgmGainToStop.disconnect();
         }, 1100);
     }
 
@@ -7533,7 +7536,7 @@ const soundManager = new SoundManager();
 playButton.addEventListener('click', () => {
     soundManager.init();
     soundManager.resume();
-    if (!tutorialCompleted) {
+    if (!tutorialCompleted && !tutorialStarted) {
         startTutorial(false);
     } else {
         startGame(nicknameInput.value.trim());
@@ -7614,7 +7617,7 @@ nicknameInput.addEventListener('keydown', (e) => {
         e.stopPropagation();
         soundManager.init();
         soundManager.resume();
-        if (!tutorialCompleted) {
+        if (!tutorialCompleted && !tutorialStarted) {
             startTutorial(false);
         } else {
             startGame(nicknameInput.value.trim());
@@ -7634,6 +7637,9 @@ window.addEventListener('popstate', (event) => {
 // ---- Tutorial Engine ----
 
 function startTutorial(isReplay) {
+    tutorialStarted = true;
+    localStorage.setItem('ps_tutorial_started', 'true');
+
     tutorialIsReplay = isReplay;
     tutorialActive = true;
     if (tutorialOverlay) tutorialOverlay.classList.remove('tutorial-black-bg');
@@ -8723,6 +8729,7 @@ function loadSettings() {
 
         // Load tutorial completion flag
         tutorialCompleted = localStorage.getItem('ps_tutorial_completed') === 'true';
+        tutorialStarted = tutorialCompleted || localStorage.getItem('ps_tutorial_started') === 'true';
 
         // Load unlock data
         const savedLP = localStorage.getItem('ps_lifetime_points');
