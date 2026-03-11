@@ -3514,7 +3514,10 @@ const playButton = document.getElementById('playButton');
 const replayButton = document.getElementById('replayButton');
 const hud = document.getElementById('hud');
 const lbEntries = document.getElementById('lbEntries');
+const playerScore = document.getElementById('playerScore');
 const scoreValue = document.getElementById('scoreValue');
+const scoreDigits = document.getElementById('scoreDigits');
+const scoreGainFx = document.getElementById('scoreGainFx');
 const finalScore = document.getElementById('finalScore');
 const finalLength = document.getElementById('finalLength');
 const finalRank = document.getElementById('finalRank');
@@ -3549,6 +3552,14 @@ let currentKing = null;
 let hudUpdateTimer = 0;
 let playerSnakeStyleIndex = 0;
 let screenScale = 1.0;
+let displayedPlayerScore = 0;
+let lastPlayerScoreGainColor = '#ffe600';
+let scoreVisualValue = 0;
+let scoreRollFrom = 0;
+let scoreRollTo = 0;
+let scoreRollStartTime = 0;
+let scoreRollDuration = 0;
+let scoreRollActive = false;
 let lifetimePoints = 0;
 let currentUnlockProgress = 0;
 let unlockedSnakes = new Set([0, 1, 2]); // 3 free starters
@@ -4439,7 +4450,13 @@ function checkCollisions() {
                     }
                     // Give score to killer
                     if (other.alive) {
-                        other.score += Math.floor(snake.score * 0.3);
+                        const killReward = Math.floor(snake.score * 0.3);
+                        if (killReward > 0) {
+                            other.score += killReward;
+                            if (other.isPlayer) {
+                                lastPlayerScoreGainColor = snake.color || '#ffe600';
+                            }
+                        }
                     }
                     break;
                 }
@@ -4464,7 +4481,13 @@ function checkCollisions() {
                         onPlayerDeath();
                     }
                     if (other.alive) {
-                        other.score += Math.floor(snake.score * 0.3);
+                        const killReward = Math.floor(snake.score * 0.3);
+                        if (killReward > 0) {
+                            other.score += killReward;
+                            if (other.isPlayer) {
+                                lastPlayerScoreGainColor = snake.color || '#ffe600';
+                            }
+                        }
                     }
                     break;
                 }
@@ -4504,6 +4527,7 @@ function checkCollisions() {
                 // Satisfying Logic
                 snake.headScale = 1.6; // Bigger Gulp
                 if (snake.isPlayer) {
+                    lastPlayerScoreGainColor = f.color || '#ffe600';
                     screenShake = 5 + f.value; // Crunchier
                     soundManager.playCollect();
 
@@ -5292,6 +5316,167 @@ function drawMinimap() {
 }
 
 // ---- Leaderboard ----
+function setScoreDigitsText(score) {
+    const safeScoreText = String(Math.max(0, Math.floor(score)));
+    if (scoreDigits) {
+        if (scoreDigits.textContent !== safeScoreText) scoreDigits.textContent = safeScoreText;
+    } else if (scoreValue) {
+        if (scoreValue.textContent !== safeScoreText) scoreValue.textContent = safeScoreText;
+    }
+}
+
+function resetScoreHudEffects(score = 0) {
+    const safeScore = Math.max(0, Math.floor(score));
+    displayedPlayerScore = safeScore;
+    lastPlayerScoreGainColor = '#ffe600';
+    scoreVisualValue = safeScore;
+    scoreRollFrom = safeScore;
+    scoreRollTo = safeScore;
+    scoreRollStartTime = 0;
+    scoreRollDuration = 0;
+    scoreRollActive = false;
+
+    if (scoreValue) {
+        scoreValue.classList.remove('score-hit');
+        scoreValue.style.removeProperty('--score-pop-scale');
+        scoreValue.style.removeProperty('--score-shake-px');
+        scoreValue.style.removeProperty('--score-roll-tilt');
+    }
+
+    if (scoreDigits) {
+        scoreDigits.classList.remove('score-rolling', 'score-slam');
+    }
+
+    if (playerScore) {
+        playerScore.classList.remove('score-hit');
+        playerScore.style.removeProperty('--score-hit-intensity');
+        playerScore.style.removeProperty('--score-hit-color');
+    }
+
+    if (scoreGainFx) {
+        scoreGainFx.classList.remove('active', 'mega');
+        scoreGainFx.textContent = '';
+        scoreGainFx.style.removeProperty('--score-float-distance');
+    }
+
+    setScoreDigitsText(safeScore);
+}
+
+function triggerScoreIncreaseEffect(delta, nextScore = displayedPlayerScore + delta) {
+    if (!playerScore || !scoreValue || delta <= 0) return;
+
+    const targetScore = Math.max(0, Math.floor(nextScore));
+    const hitColor = lastPlayerScoreGainColor || '#ffe600';
+    const intensity = clamp(delta / 12, 0.15, 1.0);
+    const popScale = lowQuality
+        ? (1.12 + intensity * 0.14)
+        : (1.22 + intensity * 0.22);
+    const floatDistance = lowQuality
+        ? Math.round(14 + intensity * 6)
+        : Math.round(20 + intensity * 14);
+    const shakePx = lowQuality
+        ? (0.5 + intensity * 0.55)
+        : (0.95 + intensity * 1.7);
+    const rollTilt = lowQuality
+        ? (0.9 + intensity * 0.8)
+        : (1.5 + intensity * 2.4);
+    const rollDuration = lowQuality
+        ? clamp(110 + delta * 10, 120, 300)
+        : clamp(150 + delta * 14, 170, 460);
+
+    playerScore.style.setProperty('--score-hit-intensity', intensity.toFixed(2));
+    playerScore.style.setProperty('--score-hit-color', hitColor);
+    scoreValue.style.setProperty('--score-pop-scale', popScale.toFixed(2));
+    scoreValue.style.setProperty('--score-shake-px', `${shakePx.toFixed(2)}px`);
+    scoreValue.style.setProperty('--score-roll-tilt', `${rollTilt.toFixed(2)}deg`);
+
+    playerScore.classList.remove('score-hit');
+    scoreValue.classList.remove('score-hit');
+    void scoreValue.offsetWidth; // Restart CSS animation timeline
+    playerScore.classList.add('score-hit');
+    scoreValue.classList.add('score-hit');
+
+    if (scoreDigits) {
+        scoreDigits.classList.remove('score-slam');
+        scoreDigits.classList.add('score-rolling');
+    }
+
+    scoreRollFrom = scoreVisualValue;
+    if (!Number.isFinite(scoreRollFrom)) scoreRollFrom = displayedPlayerScore;
+    scoreRollFrom = clamp(scoreRollFrom, 0, targetScore);
+    scoreRollTo = targetScore;
+    scoreRollStartTime = performance.now();
+    scoreRollDuration = rollDuration;
+    scoreRollActive = true;
+
+    if (!scoreGainFx) return;
+
+    scoreGainFx.textContent = `+${delta}`;
+    scoreGainFx.style.setProperty('--score-float-distance', `${floatDistance}px`);
+    scoreGainFx.classList.remove('active', 'mega');
+    if (delta >= 10) scoreGainFx.classList.add('mega');
+    void scoreGainFx.offsetWidth; // Restart CSS animation timeline
+    scoreGainFx.classList.add('active');
+}
+
+function updateScoreHudAnimation(now) {
+    if (!scoreValue) return;
+
+    if (scoreRollActive) {
+        const t = scoreRollDuration > 0
+            ? clamp((now - scoreRollStartTime) / scoreRollDuration, 0, 1)
+            : 1;
+        const eased = 1 - Math.pow(1 - t, 3);
+        scoreVisualValue = lerp(scoreRollFrom, scoreRollTo, eased);
+        setScoreDigitsText(scoreVisualValue);
+
+        if (t >= 1) {
+            scoreVisualValue = scoreRollTo;
+            scoreRollActive = false;
+            setScoreDigitsText(scoreRollTo);
+
+            if (scoreDigits) {
+                scoreDigits.classList.remove('score-rolling');
+                scoreDigits.classList.remove('score-slam');
+                void scoreDigits.offsetWidth;
+                scoreDigits.classList.add('score-slam');
+            }
+        }
+        return;
+    }
+
+    if (scoreVisualValue !== displayedPlayerScore) {
+        scoreVisualValue = displayedPlayerScore;
+        setScoreDigitsText(displayedPlayerScore);
+    }
+
+    if (scoreDigits && scoreDigits.classList.contains('score-rolling')) {
+        scoreDigits.classList.remove('score-rolling');
+    }
+}
+
+function syncPlayerScoreHud() {
+    if (!player || !player.alive) return;
+
+    const latestScore = Math.max(0, Math.floor(player.score));
+    const delta = latestScore - displayedPlayerScore;
+
+    if (delta > 0) {
+        triggerScoreIncreaseEffect(delta, latestScore);
+    } else if (delta < 0) {
+        // Safety fallback for abrupt score resets outside normal game start/respawn paths.
+        scoreRollActive = false;
+        scoreVisualValue = latestScore;
+        setScoreDigitsText(latestScore);
+        if (scoreDigits) scoreDigits.classList.remove('score-rolling');
+    } else if (!scoreRollActive) {
+        scoreVisualValue = latestScore;
+        setScoreDigitsText(latestScore);
+    }
+
+    displayedPlayerScore = latestScore;
+}
+
 function updateLeaderboard() {
     const alive = snakes.filter(s => s.alive);
     alive.sort((a, b) => b.score - a.score);
@@ -5320,9 +5505,7 @@ function updateLeaderboard() {
     lbEntries.innerHTML = html;
 
     // Update player score
-    if (player && player.alive) {
-        scoreValue.textContent = player.score;
-    }
+    syncPlayerScoreHud();
 
     // Boost indicator
     if (player && player.boostIntensity > 0.05) {
@@ -5513,6 +5696,7 @@ function startGame(nickname) {
     const playerStyle = SNAKE_STYLES[playerSnakeStyleIndex];
     player = new Snake(nickname || 'Player', playerStyle, true);
     snakes.push(player);
+    resetScoreHudEffects(player.score);
 
     // Camera to player (including smooth target buffer + direction angle)
     const spawnDv = DIR_VECTORS[player.dir];
@@ -5841,6 +6025,12 @@ function gameLoop(timestamp) {
 
     // Maintain food
     maintainFood();
+
+    // Trigger score FX immediately when score changes (leaderboard stays throttled).
+    syncPlayerScoreHud();
+
+    // Keep score HUD animation at frame rate (slot-machine roll effect)
+    updateScoreHudAnimation(now);
 
     // Cache king for rendering
     currentKing = getKing();
@@ -7628,6 +7818,7 @@ function respawnPlayer() {
     const playerStyle = SNAKE_STYLES[playerSnakeStyleIndex];
     const name = (player && player.name) || 'Player';
     player = new Snake(name, playerStyle, true);
+    resetScoreHudEffects(player.score);
 
     if (tutorialActive) {
         // Reset player to center and fixed direction in tutorial to ensure controlled environment
@@ -8772,6 +8963,10 @@ function goToHomeScreen() {
 // Focus nickname input on load
 const lowQualityToggle = document.getElementById('lowQualityToggle');
 
+function applyQualityModeClass() {
+    document.body.classList.toggle('low-quality', !!lowQuality);
+}
+
 window.addEventListener('load', () => {
     loadSettings();
     warmTutorialTransitionImages();
@@ -8832,12 +9027,15 @@ function loadSettings() {
     } catch (e) {
         console.warn('LocalStorage error:', e);
     }
+
+    applyQualityModeClass();
 }
 
 if (lowQualityToggle) {
     lowQualityToggle.addEventListener('change', (e) => {
         lowQuality = e.target.checked;
         localStorage.setItem('ps_quality', lowQuality);
+        applyQualityModeClass();
     });
 }
 

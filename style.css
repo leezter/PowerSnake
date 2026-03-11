@@ -544,6 +544,46 @@ body::before {
     display: flex;
     align-items: center;
     gap: 10px;
+    overflow: visible;
+    --score-hit-color: var(--neon-yellow);
+}
+
+#playerScore::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 24px;
+    border: 1px solid rgba(0, 240, 255, 0);
+    opacity: 0;
+    transform: scale(0.96);
+    pointer-events: none;
+}
+
+#playerScore.score-hit::after {
+    animation: scoreHudPulse 0.42s ease-out;
+}
+
+@keyframes scoreHudPulse {
+    0% {
+        opacity: 0;
+        transform: scale(0.96);
+        border-color: transparent;
+        box-shadow: none;
+    }
+
+    30% {
+        opacity: calc(0.35 + var(--score-hit-intensity, 0.8) * 0.55);
+        transform: scale(1.03);
+        border-color: var(--score-hit-color, var(--neon-yellow));
+        box-shadow: 0 0 18px var(--score-hit-color, var(--neon-yellow));
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(1.09);
+        border-color: transparent;
+        box-shadow: none;
+    }
 }
 
 #scoreValue {
@@ -551,6 +591,216 @@ body::before {
     font-weight: 700;
     font-size: 1.4rem;
     text-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+    display: inline-block;
+    transform-origin: center;
+    position: relative;
+    overflow: visible;
+}
+
+#scoreValue.score-hit {
+    animation: scoreValueBurst 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#scoreDigits {
+    display: inline-block;
+    min-width: 2ch;
+    text-align: right;
+    transform-origin: center;
+}
+
+#scoreDigits.score-rolling {
+    animation: scoreDigitsSpin 0.065s steps(2, end) infinite;
+}
+
+@keyframes scoreDigitsSpin {
+    0% {
+        transform: translate(0, 0) skewX(calc(var(--score-roll-tilt, 1.8deg) * -1));
+        opacity: 0.9;
+    }
+
+    25% {
+        transform: translate(var(--score-shake-px, 1.4px), -1px) skewX(var(--score-roll-tilt, 1.8deg));
+    }
+
+    50% {
+        transform: translate(calc(var(--score-shake-px, 1.4px) * -1), 0) skewX(calc(var(--score-roll-tilt, 1.8deg) * -1));
+        opacity: 1;
+    }
+
+    75% {
+        transform: translate(var(--score-shake-px, 1.4px), 1px) skewX(var(--score-roll-tilt, 1.8deg));
+    }
+
+    100% {
+        transform: translate(0, 0) skewX(calc(var(--score-roll-tilt, 1.8deg) * -1));
+        opacity: 0.95;
+    }
+}
+
+#scoreDigits.score-slam {
+    animation: scoreDigitsSlam 0.24s cubic-bezier(0.2, 0.95, 0.35, 1);
+}
+
+@keyframes scoreDigitsSlam {
+    0% {
+        transform: translateY(-3px) scale(1.18);
+    }
+
+    45% {
+        transform: translateY(1px) scale(0.9);
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes scoreValueBurst {
+    0% {
+        transform: scale(1);
+        color: var(--neon-cyan);
+        text-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+    }
+
+    35% {
+        transform: scale(var(--score-pop-scale, 1.3));
+        color: #fff8b3;
+        text-shadow:
+            0 0 20px var(--score-hit-color, var(--neon-yellow)),
+            0 0 30px rgba(0, 240, 255, 0.45);
+    }
+
+    100% {
+        transform: scale(1);
+        color: var(--neon-cyan);
+        text-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+    }
+}
+
+#scoreGainFx {
+    position: absolute;
+    top: -14px;
+    right: 10px;
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--score-hit-color, var(--neon-yellow));
+    text-shadow: 0 0 12px var(--score-hit-color, var(--neon-yellow));
+    opacity: 0;
+    transform: translateY(0) scale(0.75);
+    pointer-events: none;
+}
+
+#scoreGainFx.active {
+    animation: scoreGainRise 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#scoreGainFx.mega {
+    font-size: 0.95rem;
+    text-shadow: 0 0 14px var(--score-hit-color, var(--neon-yellow));
+}
+
+@keyframes scoreGainRise {
+    0% {
+        opacity: 0;
+        transform: translateY(6px) scale(0.75);
+    }
+
+    25% {
+        opacity: 1;
+        transform: translateY(-1px) scale(1.05);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(calc(var(--score-float-distance, 24px) * -1)) scale(0.9);
+    }
+}
+
+body.low-quality #playerScore::after {
+    display: none;
+}
+
+body.low-quality #scoreValue {
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+}
+
+body.low-quality #scoreValue.score-hit {
+    animation: scoreValueBurstLow 0.26s ease-out;
+}
+
+body.low-quality #scoreDigits.score-rolling {
+    animation: scoreDigitsSpinLow 0.095s steps(2, end) infinite;
+}
+
+@keyframes scoreDigitsSpinLow {
+    0% {
+        transform: translate(0, 0) skewX(-1deg);
+    }
+
+    50% {
+        transform: translate(0.6px, 0) skewX(1deg);
+    }
+
+    100% {
+        transform: translate(0, 0) skewX(-1deg);
+    }
+}
+
+body.low-quality #scoreDigits.score-slam {
+    animation: scoreDigitsSlamLow 0.18s ease-out;
+}
+
+@keyframes scoreDigitsSlamLow {
+    0% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes scoreValueBurstLow {
+    0% {
+        transform: scale(1);
+    }
+
+    45% {
+        transform: scale(var(--score-pop-scale, 1.18));
+        color: #fffbe0;
+    }
+
+    100% {
+        transform: scale(1);
+        color: var(--neon-cyan);
+    }
+}
+
+body.low-quality #scoreGainFx {
+    text-shadow: none;
+}
+
+body.low-quality #scoreGainFx.active {
+    animation: scoreGainRiseLow 0.32s ease-out;
+}
+
+@keyframes scoreGainRiseLow {
+    0% {
+        opacity: 0;
+        transform: translateY(3px) scale(0.8);
+    }
+
+    25% {
+        opacity: 1;
+        transform: translateY(-2px) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-14px) scale(0.9);
+    }
 }
 
 /* Minimap */
