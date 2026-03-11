@@ -3587,6 +3587,10 @@ let tutorialBoostBot = null; // reference to the boost demo bot
 let tutorialWasBoosting = false; // tracks if player was boosting last frame (for edge detection)
 let tutorialMoveCount = 0;
 let tutorialLastDir = -1;
+const EXTRA_TUTORIAL_TRANSITION_IMAGES = ['tutorial_steer_closer.png', 'tutorial_super_boost.png'];
+const tutorialTransitionImageLoadCache = new Map();
+let tutorialTransitionImageWarmupPromise = null;
+let transitionImageRequestId = 0;
 
 const TUTORIAL_TOTAL_STEPS = 7;
 const TUTORIAL_STEPS = [
@@ -3661,6 +3665,68 @@ const TUTORIAL_STEPS = [
         transitionDesc: 'You are battle-ready. First completion unlocks GLITCH.'
     }
 ];
+
+function normalizeTransitionImageSrc(src) {
+    if (!src) return null;
+    try {
+        return new URL(src, window.location.href).href;
+    } catch (_) {
+        return src;
+    }
+}
+
+function preloadTransitionImage(src) {
+    const normalizedSrc = normalizeTransitionImageSrc(src);
+    if (!normalizedSrc) return Promise.resolve({ src: null, loaded: false });
+
+    if (tutorialTransitionImageLoadCache.has(normalizedSrc)) {
+        return tutorialTransitionImageLoadCache.get(normalizedSrc);
+    }
+
+    const loadPromise = new Promise((resolve) => {
+        const img = new Image();
+        img.decoding = 'async';
+        img.onload = () => resolve({ src: normalizedSrc, loaded: true });
+        img.onerror = () => resolve({ src: normalizedSrc, loaded: false });
+        img.src = normalizedSrc;
+    });
+
+    tutorialTransitionImageLoadCache.set(normalizedSrc, loadPromise);
+    return loadPromise;
+}
+
+function warmTutorialTransitionImages() {
+    if (tutorialTransitionImageWarmupPromise) return tutorialTransitionImageWarmupPromise;
+
+    const imageSources = new Set(EXTRA_TUTORIAL_TRANSITION_IMAGES);
+    for (const step of TUTORIAL_STEPS) {
+        if (step.image) imageSources.add(step.image);
+    }
+
+    tutorialTransitionImageWarmupPromise = Promise.allSettled(
+        Array.from(imageSources, (src) => preloadTransitionImage(src))
+    );
+    return tutorialTransitionImageWarmupPromise;
+}
+
+function setTransitionImage(imageSrc) {
+    if (!transitionImageEl) return;
+
+    const requestId = ++transitionImageRequestId;
+    const normalizedSrc = normalizeTransitionImageSrc(imageSrc);
+
+    transitionImageEl.classList.add('hidden');
+    transitionImageEl.removeAttribute('src');
+
+    if (!normalizedSrc) return;
+
+    preloadTransitionImage(normalizedSrc).then(({ loaded }) => {
+        if (!transitionImageEl || requestId !== transitionImageRequestId) return;
+        if (!loaded) return;
+        transitionImageEl.src = normalizedSrc;
+        transitionImageEl.classList.remove('hidden');
+    });
+}
 
 // ---- Resize ----
 function resizeCanvas() {
@@ -5477,6 +5543,8 @@ function startGame(nickname) {
     // Determine how many bots to create (capped by available styles)
     const botsToCreate = Math.min(BOT_COUNT, availableIndices.length);
 
+    const zeroScoreBotCount = Math.max(1, Math.ceil(botsToCreate * 0.7));
+
     for (let i = 0; i < botsToCreate; i++) {
         const index = availableIndices[i];
         const style = SNAKE_STYLES[index];
@@ -5485,7 +5553,7 @@ function startGame(nickname) {
         const bot = new Snake(name, style, false);
 
         // Give bots some starting score
-        bot.score = randInt(10, 150);
+        bot.score = i < zeroScoreBotCount ? 0 : randInt(1, 30);
         // Add segments matching their score
         const extra = Math.floor(bot.score / 3);
         const dv = DIR_VECTORS[(bot.dir + 2) % 4];
@@ -7637,6 +7705,8 @@ window.addEventListener('popstate', (event) => {
 // ---- Tutorial Engine ----
 
 function startTutorial(isReplay) {
+    warmTutorialTransitionImages();
+
     tutorialStarted = true;
     localStorage.setItem('ps_tutorial_started', 'true');
 
@@ -7769,12 +7839,9 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
             transitionDescEl.textContent = transitionDesc || "";
 
             if (customImage) {
-                if (transitionImageEl) {
-                    transitionImageEl.src = customImage;
-                    transitionImageEl.classList.remove('hidden');
-                }
+                setTransitionImage(customImage);
             } else {
-                if (transitionImageEl) transitionImageEl.classList.add('hidden');
+                setTransitionImage(null);
             }
         } else {
             // Update transition screen text based on the upcoming step
@@ -7785,17 +7852,14 @@ function showTutorialTransition(callback, transitionText = null, transitionDesc 
                 transitionDescEl.textContent = nextStep.transitionDesc || "";
 
                 if (nextStep.image) {
-                    if (transitionImageEl) {
-                        transitionImageEl.src = nextStep.image;
-                        transitionImageEl.classList.remove('hidden');
-                    }
+                    setTransitionImage(nextStep.image);
                 } else {
-                    if (transitionImageEl) transitionImageEl.classList.add('hidden');
+                    setTransitionImage(null);
                 }
             } else {
                 transitionTextEl.textContent = "READY FOR BATTLE...";
                 transitionDescEl.textContent = "";
-                if (transitionImageEl) transitionImageEl.classList.add('hidden');
+                setTransitionImage(null);
             }
         }
     };
@@ -8550,6 +8614,8 @@ function setupTutorialSurvivalStep() {
     // Simple shuffle
     availableIndices.sort(() => Math.random() - 0.5);
 
+    const tutorialZeroScoreBotCount = Math.max(1, Math.ceil(count * 0.7));
+
     for (let i = 0; i < count; i++) {
         const style = SNAKE_STYLES[availableIndices[i % availableIndices.length]];
         const bot = new Snake(style.name, style, false);
@@ -8565,7 +8631,7 @@ function setupTutorialSurvivalStep() {
 
         // Clear existing segments (from constructor) and rebuild based on chosen position
         bot.segments = [];
-        bot.score = randInt(25, 120);
+        bot.score = i < tutorialZeroScoreBotCount ? 0 : randInt(1, 30);
 
         // Build the full length (base 15 + extra based on score) behind the head
         const baseLength = 15;
@@ -8681,6 +8747,7 @@ function goToHomeScreen() {
         tutorialTransitionOverlay.classList.remove('transition-no-fade');
         tutorialTransitionOverlay.classList.add('hidden');
     }
+    setTransitionImage(null);
     tutorialActive = false;
     if (typeof snakeSelectionScreen !== 'undefined') {
         snakeSelectionScreen.classList.add('hidden');
@@ -8707,6 +8774,7 @@ const lowQualityToggle = document.getElementById('lowQualityToggle');
 
 window.addEventListener('load', () => {
     loadSettings();
+    warmTutorialTransitionImages();
     updateNextUnlockTeaser();
     nicknameInput.focus();
 });
